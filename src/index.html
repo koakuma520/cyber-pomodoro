@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>赛博番茄钟</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Particle background -->
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- Scanline overlay -->
+  <div class="scanlines"></div>
+
+  <!-- Noise overlay -->
+  <svg class="noise-overlay" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+    <filter id="noiseFilter">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+    <rect width="100%" height="100%" filter="url(#noiseFilter)" opacity="0.03"/>
+  </svg>
+
+  <!-- Glitch flash overlay -->
+  <div id="glitch-flash"></div>
+
+  <div id="app">
+    <!-- Custom Title Bar -->
+    <div id="title-bar">
+      <div class="title-drag">
+        <span class="title-icon">◈</span>
+        <span class="title-text">赛博番茄钟</span>
+        <span class="title-status" id="title-status-dot"></span>
+      </div>
+      <div class="title-controls">
+        <button class="title-btn" onclick="window.pomodoroAPI.windowAction('minimize')">─</button>
+        <button class="title-btn" onclick="window.pomodoroAPI.windowAction('maximize')">□</button>
+        <button class="title-btn title-close" onclick="window.pomodoroAPI.windowAction('close')">✕</button>
+      </div>
+    </div>
+
+    <div id="main-content">
+      <!-- Status Bar -->
+      <div id="status-bar">
+        <span id="clock-display">00:00</span>
+        <span class="status-dot"></span>
+      </div>
+
+      <!-- Mode Selector -->
+      <div id="mode-selector">
+        <button class="mode-btn active" data-mode="work">专注</button>
+        <button class="mode-btn" data-mode="shortBreak">短休</button>
+        <button class="mode-btn" data-mode="longBreak">长休</button>
+      </div>
+
+      <!-- Timer -->
+      <div id="timer-container">
+        <canvas id="progress-ring" width="340" height="340"></canvas>
+        <div id="time-display">
+          <span id="time-text">25:00</span>
+          <span id="session-label">就绪</span>
+        </div>
+        <div id="session-counter">今日完成 <span id="today-count">0</span> 个番茄 · <span id="today-minutes">0</span> 分钟</div>
+      </div>
+
+      <!-- Controls -->
+      <div id="controls">
+        <button id="main-btn" class="ctrl-btn primary">开始</button>
+        <button id="reset-btn" class="ctrl-btn secondary">重置</button>
+      </div>
+
+      <!-- Stats Panel -->
+      <div id="stats-panel" onclick="toggleHistory()">
+        <div class="stats-header">
+          <span class="stats-title">统 计</span>
+          <span class="stats-toggle">▾</span>
+        </div>
+        <div id="history-list" class="hidden"></div>
+      </div>
+
+      <!-- Settings Button -->
+      <button id="settings-toggle" onclick="toggleSettings()">
+        <span class="gear-icon">⚙</span> 设 置
+      </button>
+
+      <!-- Settings Panel -->
+      <div id="settings-panel" class="hidden">
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label>专注时长 (分)</label>
+            <input type="number" id="s-work" min="1" max="120" value="25">
+          </div>
+          <div class="setting-item">
+            <label>短休时长 (分)</label>
+            <input type="number" id="s-short" min="1" max="60" value="5">
+          </div>
+          <div class="setting-item">
+            <label>长休时长 (分)</label>
+            <input type="number" id="s-long" min="1" max="120" value="15">
+          </div>
+          <div class="setting-item">
+            <label>长休间隔 (番茄数)</label>
+            <input type="number" id="s-interval" min="1" max="20" value="4">
+          </div>
+          <div class="setting-item">
+            <label>通知音量</label>
+            <input type="range" id="s-volume" min="0" max="1" step="0.1" value="0.5">
+          </div>
+          <div class="setting-item">
+            <label>静音</label>
+            <label class="switch">
+              <input type="checkbox" id="s-muted">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="setting-item">
+            <label>窗口置顶</label>
+            <label class="switch">
+              <input type="checkbox" id="s-ontop" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="setting-item">
+            <label>自动开始休息</label>
+            <label class="switch">
+              <input type="checkbox" id="s-auto-break">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="setting-item">
+            <label>自动开始专注</label>
+            <label class="switch">
+              <input type="checkbox" id="s-auto-work">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="settings-actions">
+          <button id="settings-save" class="ctrl-btn primary" onclick="saveSettings()">保存设置</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
