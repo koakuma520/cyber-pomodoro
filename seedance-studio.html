@@ -1,0 +1,1905 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Seedance Studio - AI 视频生成</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #f5f6fa;
+    --bg-secondary: #ffffff;
+    --bg-card: rgba(255,255,255,0.82);
+    --bg-card-hover: rgba(255,255,255,0.96);
+    --border: rgba(0,0,0,0.06);
+    --border-hover: rgba(102,126,234,0.25);
+    --text-primary: #1a1a2e;
+    --text-secondary: #7a7a9a;
+    --accent: #667eea;
+    --accent-hover: #5a6fd6;
+    --accent-gradient: linear-gradient(135deg, #667eea, #764ba2);
+    --accent-glow: rgba(102,126,234,0.25);
+    --success: #00d2a0;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-xs: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+    --shadow-hover: 0 4px 24px rgba(0,0,0,0.08);
+    --toast-bg: rgba(30,30,50,0.92);
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+    --header-height: 60px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #b0b0b0; }
+
+  /* Header */
+  .header {
+    height: var(--header-height);
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-inner {
+    max-width: 1280px;
+    height: 100%;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .logo-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--accent-gradient);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+    box-shadow: 0 2px 8px var(--accent-glow);
+  }
+  .logo-text { font-size: 18px; font-weight: 700; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .logo-sub {
+    font-size: 11px; color: var(--text-secondary); -webkit-text-fill-color: var(--text-secondary);
+    letter-spacing: 0.2px;
+  }
+  .header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .provider-badge {
+    font-size: 11px; padding: 3px 10px; border-radius: 20px;
+    background: rgba(102,126,234,0.08); color: var(--accent);
+    border: 1px solid rgba(102,126,234,0.18);
+    font-weight: 500;
+  }
+  .header-status { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-secondary); }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .status-dot.online { background: var(--success); box-shadow: 0 0 6px rgba(0,210,160,0.4); }
+  .status-dot.offline { background: #d0d0d0; }
+
+  /* Layout */
+  .container { max-width: 1280px; margin: 0 auto; padding: 24px; }
+  .layout-2col { display: flex; gap: 20px; align-items: flex-start; }
+  .col-main { flex: 1.4; min-width: 0; }
+  .col-side { flex: 1; min-width: 0; position: sticky; top: calc(var(--header-height) + 20px); }
+
+  /* Cards */
+  .card {
+    background: var(--bg-card);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .card:hover { box-shadow: var(--shadow-hover); }
+  .card-title {
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.6px; color: var(--text-secondary);
+    margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .card-plain { background: transparent; backdrop-filter: none; box-shadow: none; border: none; padding: 0; }
+  .card-plain:hover { box-shadow: none; }
+
+  /* API Key */
+  .api-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .api-row .input-wrap { flex: 1; min-width: 180px; position: relative; }
+  .api-row input { width: 100%; padding-right: 38px; }
+  .toggle-key-btn {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--text-secondary);
+    cursor: pointer; font-size: 15px; padding: 4px; line-height: 1;
+  }
+  .api-status { font-size: 12px; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .api-status.configured { color: var(--success); }
+  .api-status.not-configured { color: var(--text-secondary); }
+
+  .error-detail-box {
+    background: rgba(239,68,68,0.06);
+    border: 1px solid rgba(239,68,68,0.15);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--error);
+    display: none;
+    word-break: break-all;
+    line-height: 1.5;
+  }
+  .error-detail-box.show { display: block; }
+
+  /* Forms */
+  input, textarea, select {
+    background: var(--bg-secondary);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    padding: 9px 13px;
+    font-size: 14px;
+    font-family: var(--font);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  textarea { resize: vertical; min-height: 100px; line-height: 1.6; padding-bottom: 24px; }
+  select {
+    cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237a7a9a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px;
+  }
+  input[type="file"] { padding: 6px 8px; font-size: 13px; }
+  input[type="file"]::file-selector-button {
+    background: var(--bg-primary); border: 1px solid var(--border);
+    border-radius: var(--radius-xs); color: var(--text-primary); padding: 4px 10px;
+    cursor: pointer; margin-right: 8px; font-size: 12px; font-family: var(--font);
+  }
+  input[type="file"]::file-selector-button:hover { background: var(--bg-card-hover); }
+
+  /* Textarea char count overlay */
+  .textarea-wrap { position: relative; }
+  .textarea-count {
+    position: absolute; right: 10px; bottom: 8px;
+    font-size: 11px; color: var(--text-secondary);
+    pointer-events: none;
+    background: rgba(255,255,255,0.7);
+    padding: 0 4px;
+    border-radius: 3px;
+  }
+  .textarea-hint {
+    position: absolute; right: 10px; bottom: 26px;
+    font-size: 10px; color: var(--text-secondary);
+    pointer-events: none; opacity: 0.5;
+    background: rgba(255,255,255,0.5);
+    padding: 0 4px;
+    border-radius: 2px;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 22px; border: none; border-radius: var(--radius-sm);
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; text-decoration: none; white-space: nowrap; font-family: var(--font);
+    user-select: none;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: var(--accent-gradient);
+    color: white;
+    box-shadow: 0 4px 14px var(--accent-glow);
+  }
+  .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px var(--accent-glow); }
+  .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-secondary { background: var(--bg-secondary); color: var(--text-primary); border: 1.5px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-small { padding: 7px 14px; font-size: 12px; }
+  .btn-xs {
+    padding: 3px 8px; font-size: 11px; border-radius: var(--radius-xs);
+    background: var(--bg-secondary); border: 1.5px solid var(--border);
+    color: var(--text-secondary); cursor: pointer; transition: all 0.2s; font-family: var(--font);
+  }
+  .btn-xs:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-link { background: transparent; color: var(--accent); padding: 5px 12px; font-size: 12px; font-weight: 500; }
+  .btn-link:hover { background: rgba(102,126,234,0.06); border-radius: var(--radius-xs); }
+
+  /* Gen button states */
+  .btn-gen {
+    padding: 14px 32px;
+    font-size: 16px;
+    border-radius: var(--radius);
+    width: 100%;
+    font-weight: 600;
+  }
+  .btn-gen.btn-processing {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    opacity: 0.75;
+    cursor: wait;
+    box-shadow: 0 4px 14px var(--accent-glow);
+  }
+  .btn-gen.btn-processing .spinner-btn {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  .btn-gen.btn-queued {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    cursor: wait;
+    box-shadow: 0 4px 14px rgba(245,158,11,0.3);
+  }
+  .btn-gen.btn-queued .spinner-btn {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  .btn-gen.btn-done {
+    background: linear-gradient(135deg, #00d2a0, #00b894);
+    color: white;
+    box-shadow: 0 4px 14px rgba(0,210,160,0.3);
+  }
+  .btn-gen.btn-done:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,210,160,0.4); }
+  .btn-gen.btn-nokey {
+    background: #e0e0e0;
+    color: #999;
+    cursor: pointer;
+    box-shadow: none;
+  }
+  .btn-gen.btn-nokey:hover { background: #d5d5d5; }
+
+  /* Form grid */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-grid .full-width { grid-column: 1 / -1; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 14px; color: var(--text-secondary); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+
+  .toggle-group { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+  .toggle { position: relative; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--text-secondary); }
+  .toggle input { display: none; }
+  .toggle-slider {
+    width: 34px; height: 18px; background: #e5e5ea;
+    border-radius: 9px;
+    position: relative; transition: all 0.25s; flex-shrink: 0;
+  }
+  .toggle-slider::after {
+    content: ''; width: 14px; height: 14px; background: white;
+    border-radius: 50%; position: absolute; top: 2px; left: 2px;
+    transition: all 0.25s; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  }
+  .toggle input:checked + .toggle-slider { background: var(--accent); }
+  .toggle input:checked + .toggle-slider::after { left: 18px; background: white; }
+
+  /* Tooltip */
+  .tip-wrap { position: relative; display: inline-flex; align-items: center; }
+  .tip-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 15px; height: 15px; border-radius: 50%;
+    background: rgba(122,122,154,0.12); color: var(--text-secondary);
+    font-size: 9px; cursor: help; font-style: italic; font-weight: 600;
+  }
+  .tip-text {
+    visibility: hidden; opacity: 0;
+    position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    background: var(--toast-bg); color: #f0f0f0;
+    padding: 6px 10px; border-radius: var(--radius-xs); font-size: 12px;
+    white-space: nowrap; border: none;
+    transition: all 0.2s; z-index: 50; pointer-events: none;
+  }
+  .tip-wrap:hover .tip-text { visibility: visible; opacity: 1; }
+
+  /* Image upload */
+  .image-upload-wrap { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .image-upload-field { display: flex; gap: 8px; align-items: center; }
+  .image-card {
+    position: relative; width: 100%; max-width: 200px;
+    border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden;
+    background: var(--bg-secondary); flex-shrink: 0;
+  }
+  .image-card img, .image-card video {
+    width: 100%; display: block; max-height: 110px; object-fit: cover;
+  }
+  .image-card .img-del {
+    position: absolute; top: 4px; right: 4px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(0,0,0,0.5); border: none; color: white;
+    font-size: 14px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s; line-height: 1;
+  }
+  .image-card .img-del:hover { background: var(--error); }
+  .image-card .img-label {
+    position: absolute; bottom: 4px; left: 4px;
+    font-size: 10px; padding: 1px 6px; border-radius: 3px;
+    background: rgba(0,0,0,0.55); color: white;
+  }
+  .image-cards { display: flex; gap: 10px; flex-wrap: wrap; }
+  .image-dropzone {
+    border: 2px dashed var(--border); border-radius: var(--radius-sm);
+    padding: 12px; text-align: center; cursor: pointer;
+    transition: all 0.2s; min-height: 64px;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 3px; color: var(--text-secondary); font-size: 13px;
+  }
+  .image-dropzone:hover { border-color: var(--accent); background: rgba(102,126,234,0.04); }
+  .image-dropzone .icon { font-size: 20px; }
+
+  /* Suggestions */
+  .suggestions { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 2px; }
+  .suggestion-chip {
+    padding: 4px 10px; border-radius: 14px; border: 1.5px solid var(--border);
+    background: var(--bg-secondary); color: var(--text-secondary);
+    font-size: 12px; cursor: pointer; transition: all 0.2s;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;
+  }
+  .suggestion-chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(102,126,234,0.04); }
+
+  /* Progress */
+  .progress-section { display: none; }
+  .progress-section.active { display: block; }
+  .task-id { font-size: 11px; color: var(--text-secondary); font-family: 'SF Mono', 'Fira Code', monospace; word-break: break-all; margin-bottom: 8px; }
+  .progress-bar-container { height: 6px; background: #e8e8ee; border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+  .progress-bar { height: 100%; background: var(--accent-gradient); border-radius: 3px; transition: width 0.5s ease; width: 0%; }
+  .progress-info { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary); }
+  .progress-status { display: inline-flex; align-items: center; gap: 6px; }
+  .spinner { width: 14px; height: 14px; border: 2px solid #e0e0e0; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .dual-progress { display: flex; flex-direction: column; gap: 10px; }
+  .dual-progress .task-label { font-size: 12px; color: var(--text-secondary); }
+  .dual-progress .task-label .num { color: var(--accent); font-weight: 600; }
+
+  /* Result */
+  .result-section { display: none; }
+  .result-section.active { display: block; }
+  .video-wrapper { border-radius: var(--radius-sm); overflow: hidden; background: #000; margin-bottom: 12px; }
+  .video-wrapper video { width: 100%; display: block; max-height: 460px; }
+  .result-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .compare-results { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .compare-results .video-wrapper { margin-bottom: 6px; }
+  .compare-label { font-size: 12px; color: var(--text-secondary); text-align: center; margin-bottom: 4px; }
+  .share-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); align-items: center; }
+
+  /* Gallery click feedback */
+  @keyframes cardPop {
+    0% { transform: scale(1); }
+    40% { transform: scale(0.94); box-shadow: 0 0 0 3px var(--accent); }
+    100% { transform: scale(1); }
+  }
+  .gallery-card.clicked { animation: cardPop 0.25s ease; }
+  .prompt-flash { box-shadow: 0 0 0 3px var(--accent-glow) !important; transition: box-shadow 0.15s; }
+
+  /* Cost animation */
+  @keyframes costPulse {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.18); color: var(--success); }
+    100% { transform: scale(1); }
+  }
+  .cost-animate { animation: costPulse 0.55s ease; }
+
+  /* History */
+  .history-list { display: flex; flex-direction: column; gap: 6px; }
+  .history-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+    background: var(--bg-secondary); border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border); transition: border-color 0.2s;
+  }
+  .history-item:hover { border-color: var(--accent); }
+  .h-thumb {
+    width: 72px; height: 44px; border-radius: var(--radius-xs); background: #000;
+    flex-shrink: 0; overflow: hidden; position: relative;
+    cursor: pointer;
+  }
+  .h-thumb video { width: 100%; height: 100%; object-fit: cover; }
+  .h-thumb .h-play {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.25); opacity: 0; transition: opacity 0.2s;
+    font-size: 16px;
+  }
+  .h-thumb:hover .h-play { opacity: 1; }
+  .h-info { flex: 1; min-width: 0; cursor: pointer; }
+  .h-info .h-prompt { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary); }
+  .h-info .h-prompt:hover { color: var(--accent); }
+  .h-info .h-meta { font-size: 11px; color: var(--text-secondary); display: flex; gap: 5px; flex-wrap: wrap; }
+  .h-info .h-meta span { background: var(--bg-primary); padding: 0 5px; border-radius: 3px; }
+  .h-info .h-countdown { font-size: 11px; color: var(--warning); }
+  .h-actions { display: flex; gap: 3px; flex-shrink: 0; }
+  .h-badge {
+    font-size: 10px; padding: 1px 6px; border-radius: 3px;
+    flex-shrink: 0; align-self: flex-start; margin-top: 2px;
+  }
+  .h-badge.done { background: rgba(0,210,160,0.08); color: var(--success); }
+  .h-badge.fail { background: rgba(239,68,68,0.08); color: var(--error); }
+  .history-empty { text-align: center; padding: 24px 12px; color: var(--text-secondary); }
+  .history-empty .empty-icon { font-size: 42px; margin-bottom: 8px; opacity: 0.6; }
+  .history-empty p { font-size: 13px; margin-bottom: 10px; }
+
+  /* Result overlay */
+  .result-overlay {
+    display: none; position: fixed; inset: 0; z-index: 10000;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .result-overlay.open { display: flex; }
+  .result-overlay .ro-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 100%; max-width: 560px;
+    max-height: 90vh;
+    box-shadow: 0 16px 64px rgba(0,0,0,0.2);
+    overflow: hidden;
+    animation: roFadeIn 0.3s ease;
+  }
+  @keyframes roFadeIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .ro-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+  }
+  .ro-header h3 { font-size: 15px; font-weight: 600; }
+  .ro-close {
+    background: none; border: none; color: var(--text-secondary);
+    font-size: 22px; cursor: pointer; padding: 2px; line-height: 1;
+  }
+  .ro-close:hover { color: var(--text-primary); }
+  .ro-video {
+    background: #000;
+    position: relative;
+  }
+  .ro-video video {
+    width: 100%; display: block;
+    max-height: 360px;
+    margin: 0 auto;
+  }
+  .ro-body { padding: 16px 20px 20px; }
+  .ro-prompt {
+    font-size: 13px; color: var(--text-secondary);
+    margin-bottom: 14px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ro-actions {
+    display: flex; gap: 10px;
+  }
+  .ro-actions .btn { flex: 1; padding: 12px; font-size: 14px; }
+  .ro-actions .btn-primary { flex: 1.5; }
+
+  /* Toast */
+  .toast-container {
+    position: fixed; top: 14px; right: 14px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .toast {
+    padding: 10px 16px; border-radius: var(--radius-sm); font-size: 13px;
+    animation: slideIn 0.3s ease; max-width: 380px;
+    backdrop-filter: blur(12px); line-height: 1.4;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  }
+  .toast.error { background: rgba(239,68,68,0.9); color: white; }
+  .toast.success { background: rgba(0,210,160,0.9); color: white; }
+  .toast.info { background: rgba(102,126,234,0.9); color: white; }
+  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* Model/Mode pills */
+  .model-pills, .mode-pills { display: flex; gap: 6px; }
+  .model-pill, .mode-pill {
+    padding: 7px 14px; border: 1.5px solid var(--border); border-radius: 18px;
+    cursor: pointer; font-size: 13px; transition: all 0.2s;
+    background: var(--bg-secondary); color: var(--text-secondary); font-family: var(--font);
+  }
+  .model-pill.active { border-color: var(--accent); background: rgba(102,126,234,0.08); color: var(--accent); }
+  .model-pill:hover { border-color: var(--accent); }
+  .model-pill .pill-sub { display: block; font-size: 10px; opacity: 0.6; margin-top: 1px; }
+  .mode-pill.active { border-color: var(--success); background: rgba(0,210,160,0.08); color: var(--success); }
+  .mode-pill:hover { border-color: var(--success); }
+
+  .cost-display {
+    font-size: 20px; font-weight: 700; color: var(--accent);
+    display: flex; align-items: baseline; gap: 4px;
+  }
+  .cost-display .unit { font-size: 13px; font-weight: 400; color: var(--text-secondary); }
+  .cost-display .note { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
+
+  /* Advanced */
+  .advanced-section { margin-top: 14px; }
+  .advanced-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 13px; background: var(--bg-secondary);
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    cursor: pointer; transition: border-color 0.2s; user-select: none;
+  }
+  .advanced-header:hover { border-color: var(--accent); }
+  .advanced-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, padding 0.35s ease, opacity 0.3s ease;
+    opacity: 0;
+    padding: 0 13px;
+    border: 1.5px solid var(--border); border-top: none;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    background: var(--bg-secondary);
+  }
+  .advanced-panel.open {
+    max-height: 500px;
+    opacity: 1;
+    padding: 14px 13px 8px;
+  }
+
+  .text-sm { font-size: 12px; }
+  .text-secondary { color: var(--text-secondary); }
+  .mt-6 { margin-top: 6px; }
+  .mt-8 { margin-top: 8px; }
+  .w-full { width: 100%; }
+  .flex { display: flex; }
+  .gap-8 { gap: 8px; }
+  .items-center { align-items: center; }
+  .gap-4 { gap: 4px; }
+
+  /* Gallery */
+  .gallery-scroll {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .gallery-card {
+    flex: 0 0 180px;
+    scroll-snap-align: start;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bg-secondary);
+  }
+  .gallery-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px var(--accent-glow);
+  }
+  .gallery-visual {
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    position: relative;
+  }
+  .gallery-info { padding: 6px 8px 8px; }
+  .gallery-info .g-title { font-size: 11px; color: var(--text-primary); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gallery-info .g-use { font-size: 10px; color: var(--accent); margin-top: 2px; }
+
+  /* Works modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 10000;
+    background: rgba(0,0,0,0.45); backdrop-filter: blur(6px);
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-content {
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: var(--radius); width: 92%; max-width: 880px;
+    max-height: 84vh; display: flex; flex-direction: column;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.12);
+  }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 22px; border-bottom: 1px solid var(--border);
+  }
+  .modal-header h2 { font-size: 16px; font-weight: 600; }
+  .modal-close {
+    background: none; border: none; color: var(--text-secondary);
+    font-size: 24px; cursor: pointer; padding: 2px; line-height: 1;
+  }
+  .modal-close:hover { color: var(--text-primary); }
+  .modal-body { flex: 1; overflow-y: auto; padding: 16px 22px; }
+  .modal-search { margin-bottom: 12px; }
+  .modal-search input { font-size: 13px; padding: 8px 12px; }
+  .works-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .work-card {
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    overflow: hidden; transition: border-color 0.2s;
+  }
+  .work-card:hover { border-color: var(--accent); }
+  .work-card video { width: 100%; display: block; max-height: 150px; background: #000; border-radius: 0; }
+  .work-card .work-info { padding: 8px 10px; }
+  .work-card .work-info .w-prompt { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .work-card .work-info .w-meta { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+  .work-card .work-actions { display: flex; gap: 4px; padding: 6px 10px; border-top: 1px solid var(--border); }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .layout-2col { flex-direction: column; }
+    .col-side { flex: 0 0 auto; max-width: none; position: static; }
+    .gallery-card { flex: 0 0 160px; }
+  }
+  @media (max-width: 768px) {
+    .container { padding: 12px; }
+    .card { padding: 14px 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .header-inner { padding: 0 14px; }
+    .api-row { flex-direction: column; }
+    .api-row .input-wrap { min-width: auto; }
+    .history-item { flex-wrap: wrap; padding: 8px 10px; }
+    .h-thumb { width: 56px; height: 38px; }
+    .h-actions { width: 100%; justify-content: flex-end; }
+    .result-actions { flex-direction: column; }
+    .result-actions .btn { width: 100%; }
+    .model-pills, .mode-pills { flex-direction: column; }
+    .image-upload-field { flex-direction: column; }
+    .cost-display { font-size: 18px; }
+    .gallery-card { flex: 0 0 140px; }
+    .gallery-grid-2col { grid-template-columns: 1fr 1fr; }
+    .compare-results { grid-template-columns: 1fr; }
+    .works-grid { grid-template-columns: 1fr; }
+    .modal-content { width: 96%; max-height: 88vh; }
+    .share-row { flex-direction: column; }
+    .header-right .provider-badge { display: none; }
+    .col-side { position: static; }
+  }
+  @media (max-width: 480px) {
+    .gallery-card { flex: 0 0 130px; }
+    .header-right .header-status { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<header class="header">
+  <div class="header-inner">
+    <a class="logo" href="#">
+      <div class="logo-icon">🎬</div>
+      <div>
+        <div class="logo-text">Seedance Studio</div>
+        <div class="logo-sub">基于 Seedance 2.0 · 无需排队 · 分钟级出片</div>
+      </div>
+    </a>
+    <div class="header-right">
+      <span class="provider-badge">Atlas Cloud</span>
+      <div class="header-status">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">未连接</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+<div class="layout-2col">
+
+<!-- ========== LEFT COLUMN ========== -->
+<div class="col-main">
+
+  <!-- API Key -->
+  <div class="card">
+    <div class="card-title">🔑 API 密钥</div>
+    <div class="api-row">
+      <div class="input-wrap">
+        <input type="password" id="apiKeyInput" placeholder="Atlas Cloud API Key" autocomplete="off">
+        <button class="toggle-key-btn" onclick="toggleKey()" title="显示/隐藏">👁️</button>
+      </div>
+      <button class="btn btn-secondary" onclick="saveKey()">保存</button>
+      <span class="api-status not-configured" id="apiStatus"><span>●</span> 未配置</span>
+      <a class="btn btn-link" href="https://console.atlascloud.ai" target="_blank" rel="noopener">🆓 免费领取 $1 额度</a>
+    </div>
+    <div id="errorBox" class="error-detail-box"></div>
+  </div>
+
+  <!-- Generator -->
+  <div class="card">
+    <div class="card-title">🎬 视频生成</div>
+
+    <div class="form-grid">
+      <!-- Mode -->
+      <div class="full-width form-group">
+        <label>📋 模式</label>
+        <div class="mode-pills">
+          <button class="mode-pill active" data-mode="text" onclick="switchMode(this,'text')">✏️ 文生视频</button>
+          <button class="mode-pill" data-mode="image" onclick="switchMode(this,'image')">🖼️ 图生视频</button>
+        </div>
+      </div>
+
+      <!-- Prompt -->
+      <div class="full-width form-group">
+        <label>📝 提示词</label>
+        <div class="textarea-wrap">
+          <textarea id="promptInput" placeholder="用文字描述你想要的视频内容&#10;&#10;中文示例：一只柴犬在雪地里奔跑，电影质感，柔和的自然光&#10;💡 Seedance 2.0 对英文提示词理解更佳，建议中英文结合使用" maxlength="1000" rows="4"></textarea>
+          <span class="textarea-hint">Ctrl+Enter 发送</span>
+          <span class="textarea-count"><span id="charCount">0</span>/1000</span>
+        </div>
+        <div class="suggestions" id="suggestions">
+          <span class="suggestion-chip" onclick="fillPrompt('一只柴犬在雪地里奔跑，电影质感')">🐕 柴犬雪地奔跑</span>
+          <span class="suggestion-chip" onclick="fillPrompt('赛博朋克城市的早餐摊，霓虹灯光，雨夜')">🌆 赛博朋克早餐摊</span>
+          <span class="suggestion-chip" onclick="fillPrompt('水墨风山水画中一叶扁舟，烟雨朦胧')">🎨 水墨风山水画</span>
+          <span class="suggestion-chip" onclick="fillPrompt('未来城市日落，无人机航拍视角，赛博朋克风格')">🏙️ 未来城市日落</span>
+          <span class="suggestion-chip" onclick="fillPrompt('一只橘猫在窗边晒太阳，毛发细节清晰')">🐱 橘猫窗边</span>
+        </div>
+      </div>
+
+      <!-- Images (image mode) -->
+      <div class="full-width form-group" id="imageGroup" style="display:none;">
+        <label>🖼️ 参考图片</label>
+        <div class="image-upload-wrap">
+          <div class="image-upload-field">
+            <input type="text" id="imgUrl1" placeholder="图片 URL 或点击右侧上传">
+            <input type="file" id="imgFile1" accept="image/*" capture="environment" style="width:auto;flex-shrink:0;">
+          </div>
+          <div class="image-cards" id="imgCards">
+            <div class="image-dropzone" id="imgDropzone1" onclick="document.getElementById('imgFile1').click()">
+              <div class="icon">🖼️</div>
+              <div>点击上传首帧图片</div>
+            </div>
+          </div>
+        </div>
+        <div class="image-upload-wrap" id="endFrameWrap" style="margin-top:8px;display:none;">
+          <label style="font-size:12px;color:var(--text-secondary);">结束帧（可选，让首尾画面过渡更自然）</label>
+          <div class="image-upload-field">
+            <input type="text" id="imgUrl2" placeholder="结束帧图片 URL">
+            <input type="file" id="imgFile2" accept="image/*" capture="environment" style="width:auto;flex-shrink:0;">
+          </div>
+          <div class="image-cards" id="imgCards2">
+            <div class="image-dropzone" id="imgDropzone2" onclick="document.getElementById('imgFile2').click()">
+              <div class="icon">🖼️</div>
+              <div>点击上传结束帧（可选）</div>
+            </div>
+          </div>
+        </div>
+        <div class="text-sm text-secondary" style="margin-top:4px;">
+          ⚡ 本地代理模式下图片自动托管
+          <label class="toggle" style="margin-left:10px;font-size:12px;gap:4px;">
+            <input type="checkbox" id="endFrameToggle">
+            <span class="toggle-slider" style="width:28px;height:16px;"></span>
+            首尾帧模式
+          </label>
+        </div>
+      </div>
+
+      <!-- Model -->
+      <div class="form-group">
+        <label>🤖 模型</label>
+        <div class="model-pills">
+          <button class="model-pill active" data-model="fast" onclick="pickModel(this,'fast')">
+            Seedance 2.0 Fast
+            <span class="pill-sub">⏱️ ≈¥0.7/秒</span>
+          </button>
+          <button class="model-pill" data-model="standard" onclick="pickModel(this,'standard')">
+            Seedance 2.0
+            <span class="pill-sub">🎯 ≈¥0.9/秒</span>
+          </button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>📐 分辨率</label>
+        <select id="resolution" onchange="updateCost()">
+          <option value="480p">480p</option>
+          <option value="720p" selected>720p</option>
+          <option value="1080p">1080p</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>📏 比例
+          <span class="tip-wrap">
+            <span class="tip-icon">?</span>
+            <span class="tip-text">自适应模式下将根据首帧图片自动选择最佳比例</span>
+          </span>
+        </label>
+        <select id="ratio">
+          <option value="16:9">16:9 横屏</option>
+          <option value="9:16">9:16 竖屏</option>
+          <option value="1:1">1:1 方形</option>
+          <option value="4:3">4:3</option>
+          <option value="3:4">3:4</option>
+          <option value="21:9">21:9 超宽屏</option>
+          <option value="adaptive" selected>自适应</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>⏱️ 时长</label>
+        <select id="duration" onchange="updateCost()">
+          <option value="4">4 秒</option>
+          <option value="5" selected>5 秒</option>
+          <option value="6">6 秒</option>
+          <option value="8">8 秒</option>
+          <option value="10">10 秒</option>
+          <option value="12">12 秒</option>
+          <option value="15">15 秒</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>💰 预估费用</label>
+        <div class="cost-display" id="costDisplay">
+          <span id="costNum">¥3.6</span>
+          <span class="unit">元</span>
+          <span class="note">（Fast 模型）</span>
+        </div>
+      </div>
+      <div class="form-group" style="justify-content:flex-end;">
+        <div class="toggle-group">
+          <label class="toggle">
+            <input type="checkbox" id="audioToggle" checked>
+            <span class="toggle-slider"></span>
+            <span style="display:flex;align-items:center;gap:4px;">
+              自动匹配环境音效
+              <span class="tip-wrap">
+                <span class="tip-icon">?</span>
+                <span class="tip-text">模型根据画面自动生成背景声，非独立配音，部分模型可能不支持</span>
+              </span>
+            </span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="watermarkToggle" checked>
+            <span class="toggle-slider"></span>
+            <span style="display:flex;align-items:center;gap:4px;">
+              包含平台水印
+              <span class="tip-wrap">
+                <span class="tip-icon">?</span>
+                <span class="tip-text">关闭可能产生额外费用或不被支持</span>
+              </span>
+            </span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advanced -->
+    <div class="advanced-section">
+      <div class="advanced-header" onclick="toggleAdvanced()" id="advHeader">
+        <span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary);">⚙️ 高级参数</span>
+        <span id="advArrow" style="font-size:11px;color:var(--text-secondary);transition:transform 0.3s;">▶</span>
+      </div>
+      <div class="advanced-panel" id="advPanel">
+        <div class="form-grid" style="gap:10px;">
+          <div class="form-group">
+            <label>🚫 负向词</label>
+            <input type="text" id="negativePrompt" placeholder="如：模糊、变形、低质量、多余肢体" style="font-size:13px;padding:8px 10px;">
+          </div>
+          <div class="form-group">
+            <label>🎲 种子（Seed）</label>
+            <div style="display:flex;gap:6px;">
+              <input type="number" id="seedInput" placeholder="留空随机" min="0" style="font-size:13px;padding:8px 10px;flex:1;">
+              <button class="btn btn-small btn-secondary" onclick="randSeed()" style="padding:8px 10px;">🎲</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>🎬 运动幅度</label>
+            <select id="motionIntensity" style="font-size:13px;padding:8px 10px;">
+              <option value="">默认</option>
+              <option value="low">低（平缓）</option>
+              <option value="medium" selected>中（适中）</option>
+              <option value="high">高（剧烈）</option>
+            </select>
+          </div>
+          <!-- Comparison mode -->
+          <div class="full-width form-group" style="border-top:1px solid var(--border);padding-top:12px;">
+            <label class="toggle" style="font-size:13px;">
+              <input type="checkbox" id="compareToggle" onchange="toggleCompare()">
+              <span class="toggle-slider"></span>
+              🔄 对比生成模式 — 同提示词生成两个版本并排对比
+            </label>
+            <div id="comparePanel" style="display:none;margin-top:8px;">
+              <div class="form-grid" style="gap:8px;">
+                <div class="form-group">
+                  <label style="font-size:12px;">版本 2 种子</label>
+                  <input type="number" id="seedInput2" placeholder="不同种子产生不同画面" style="font-size:13px;padding:8px 10px;">
+                </div>
+                <div class="form-group">
+                  <label style="font-size:12px;">版本 2 时长</label>
+                  <select id="duration2" style="font-size:13px;padding:8px 10px;">
+                    <option value="">同版本 1</option>
+                    <option value="4">4 秒</option>
+                    <option value="5">5 秒</option>
+                    <option value="6">6 秒</option>
+                    <option value="8">8 秒</option>
+                    <option value="10">10 秒</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-gen btn-primary" id="genBtn">
+      🚀 开始生成视频
+    </button>
+  </div>
+
+  <!-- Progress -->
+  <div class="card progress-section" id="progSection">
+    <div class="card-title">⏳ 生成进度</div>
+    <div id="progSingle">
+      <div class="task-id" id="taskIdDisplay"></div>
+      <div class="progress-bar-container"><div class="progress-bar" id="progBar"></div></div>
+      <div class="progress-info">
+        <span class="progress-status">
+          <span class="spinner" id="progSpinner"></span>
+          <span id="progText">任务已提交...</span>
+        </span>
+        <span id="progPct">0%</span>
+      </div>
+    </div>
+    <div id="progDual" style="display:none;">
+      <div class="dual-progress">
+        <div>
+          <div class="task-label">🎬 <span class="num">版本 1</span> <span id="dualTask1Id" style="font-family:monospace;font-size:11px;opacity:0.6;"></span></div>
+          <div class="progress-bar-container"><div class="progress-bar" id="progBar1" style="background:var(--accent-gradient);"></div></div>
+          <div class="progress-info"><span id="dualText1">排队中...</span><span id="dualPct1">0%</span></div>
+        </div>
+        <div>
+          <div class="task-label">🎬 <span class="num">版本 2</span> <span id="dualTask2Id" style="font-family:monospace;font-size:11px;opacity:0.6;"></span></div>
+          <div class="progress-bar-container"><div class="progress-bar" id="progBar2" style="background:linear-gradient(135deg,#00d2a0,#00b894);"></div></div>
+          <div class="progress-info"><span id="dualText2">排队中...</span><span id="dualPct2">0%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="card result-section" id="resultSection">
+    <div class="card-title">✅ 生成完成</div>
+    <div id="resultSingle">
+      <div class="video-wrapper"><video id="resultVideo" controls playsinline></video></div>
+    </div>
+    <div id="resultDual" style="display:none;">
+      <div class="compare-results">
+        <div>
+          <div class="compare-label">🎬 版本 1</div>
+          <div class="video-wrapper"><video id="resultVideo1" controls playsinline></video></div>
+        </div>
+        <div>
+          <div class="compare-label">🎬 版本 2</div>
+          <div class="video-wrapper"><video id="resultVideo2" controls playsinline></video></div>
+        </div>
+      </div>
+    </div>
+    <div class="result-actions" id="resultActions">
+      <button class="btn btn-primary" onclick="dlVideo()">⬇️ 下载视频</button>
+      <button class="btn btn-secondary" onclick="copyLink()">🔗 复制链接</button>
+      <button class="btn btn-secondary" onclick="resetGen()">🔄 再生成</button>
+    </div>
+    <div class="share-row" id="shareRow" style="display:none;">
+      <span style="font-size:13px;color:var(--text-secondary);">分享：</span>
+      <button class="btn btn-small btn-secondary" onclick="shareAction('copy')">📋 复制链接</button>
+      <button class="btn btn-small btn-secondary" onclick="shareAction('download')">⬇️ 保存到本地</button>
+      <button class="btn btn-small btn-secondary" onclick="shareAction('wechat')">💬 分享到微信</button>
+    </div>
+  </div>
+
+</div><!-- /col-main -->
+
+<!-- ========== RIGHT COLUMN ========== -->
+<div class="col-side">
+
+  <!-- Inspiration Gallery -->
+  <div class="card">
+    <div class="card-title">✨ 灵感墙</div>
+    <div class="gallery-scroll">
+      <div class="gallery-card" onclick="fillPrompt('赛博朋克城市夜景鸟瞰，霓虹灯，雨夜，积水倒影，飞行汽车，8K画质', this)">
+        <div class="gallery-visual" style="background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);">🌃</div>
+        <div class="gallery-info">
+          <div class="g-title">赛博朋克夜城</div>
+          <div class="g-use">点击使用 →</div>
+        </div>
+      </div>
+      <div class="gallery-card" onclick="fillPrompt('一只毛茸茸的金毛犬在向日葵花田里玩耍，金色黄昏光线，浅景深，毛发细节清晰', this)">
+        <div class="gallery-visual" style="background:linear-gradient(135deg,#f093fb,#f5576c);">🐕</div>
+        <div class="gallery-info">
+          <div class="g-title">金毛犬向日葵田</div>
+          <div class="g-use">点击使用 →</div>
+        </div>
+      </div>
+      <div class="gallery-card" onclick="fillPrompt('中国传统水墨画风格，烟雨朦胧的远山，江上孤舟，竹林，诗意氛围', this)">
+        <div class="gallery-visual" style="background:linear-gradient(135deg,#2c3e50,#3498db);">🎋</div>
+        <div class="gallery-info">
+          <div class="g-title">水墨山水意境</div>
+          <div class="g-use">点击使用 →</div>
+        </div>
+      </div>
+      <div class="gallery-card" onclick="fillPrompt('美食摆盘特写镜头，冒着热气，色彩丰富，米其林星级呈现，慢动作', this)">
+        <div class="gallery-visual" style="background:linear-gradient(135deg,#f7971e,#ffd200);">🍜</div>
+        <div class="gallery-info">
+          <div class="g-title">美食特写</div>
+          <div class="g-use">点击使用 →</div>
+        </div>
+      </div>
+      <div class="gallery-card" onclick="fillPrompt('热带海滩无人机航拍，碧绿海水，白色沙滩，棕榈树摇曳，日落，电影质感', this)">
+        <div class="gallery-visual" style="background:linear-gradient(135deg,#00b4db,#0083b0);">🏝️</div>
+        <div class="gallery-info">
+          <div class="g-title">热带海滩日落</div>
+          <div class="g-use">点击使用 →</div>
+        </div>
+      </div>
+      <div class="gallery-card" onclick="fillPrompt('奢侈品香水瓶动态产品展示，转盘旋转，闪烁光粒子，黑色背景，高级质感', this)">
+        <div class="gallery-visual" style="background:linear-gradient(135deg,#434343,#000000);">✨</div>
+        <div class="gallery-info">
+          <div class="g-title">产品动态展示</div>
+          <div class="g-use">点击使用 →</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="card">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>📋 历史记录</span>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-small btn-secondary" onclick="openWorksModal()" id="viewAllBtn" style="display:none;">查看全部 →</button>
+        <button class="btn btn-small btn-danger" onclick="clearHist()" id="clearHistBtn" style="display:none;">清空</button>
+      </div>
+    </div>
+    <div id="histList" class="history-list">
+      <div class="history-empty">
+        <div class="empty-icon">🎬</div>
+        <p>生成你的第一个视频吧，它会出现在这里</p>
+        <button class="btn btn-primary btn-small" onclick="document.getElementById('promptInput').focus();window.scrollTo({top:0,behavior:'smooth'})">🚀 开始创作</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /col-side -->
+
+</div><!-- /layout-2col -->
+</div><!-- /container -->
+
+<!-- Result Overlay -->
+<div class="result-overlay" id="resultOverlay">
+  <div class="ro-card">
+    <div class="ro-header">
+      <h3>✅ 视频已生成</h3>
+      <button class="ro-close" onclick="closeResultOverlay()">&times;</button>
+    </div>
+    <div class="ro-video">
+      <video id="roVideo" controls autoplay muted playsinline></video>
+    </div>
+    <div class="ro-body">
+      <div class="ro-prompt" id="roPrompt"></div>
+      <div class="ro-actions">
+        <button class="btn btn-primary" onclick="roDownload()">⬇️ 下载视频</button>
+        <button class="btn btn-secondary" onclick="roCopy()">🔗 复制链接</button>
+        <button class="btn btn-secondary" onclick="roAgain()">🔄 再来一条</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Works Modal -->
+<div class="modal-overlay" id="worksModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>📂 我的作品</h2>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span style="font-size:12px;color:var(--text-secondary);" id="worksCount"></span>
+        <button class="modal-close" onclick="closeWorksModal()">&times;</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-search">
+        <input type="text" id="worksSearch" placeholder="🔍 搜索提示词..." oninput="filterWorks()">
+      </div>
+      <div class="works-grid" id="worksGrid"></div>
+      <div class="history-empty" id="worksEmpty" style="display:none;"><p>暂无匹配的作品</p></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ======================== Config ========================
+var isProxy = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+var C = {
+  API: isProxy ? location.origin + '/api/v1' : 'https://api.atlascloud.ai/api/v1',
+  UPLOAD: isProxy ? location.origin + '/api/upload-image' : null,
+  GEN: '/model/generateVideo',
+  POLL: '/model/prediction/',
+  MODELS: {
+    text: { fast: 'bytedance/seedance-2.0-fast/text-to-video', standard: 'bytedance/seedance-2.0/text-to-video' },
+    image: { fast: 'bytedance/seedance-2.0-fast/image-to-video', standard: 'bytedance/seedance-2.0/image-to-video' }
+  },
+  PRICE: { fast: 0.7, standard: 0.9 },
+  POLL_INTERVAL: 3000,
+  MAX_POLL: 600000,
+  HK: 'sd_hist_v3',
+  AK: 'sd_key_v3'
+};
+
+var S = {
+  key: '', model: 'fast', mode: 'text',
+  taskId: null, polling: false, pollTimer: null, pollStart: null,
+  videoUrl: '', prompt: '',
+  img1: null, img2: null,
+  compare: false,
+  tasks: [
+    { id: null, url: '', done: false, pollTimer: null },
+    { id: null, url: '', done: false, pollTimer: null }
+  ],
+  resultVideoUrls: [],
+  pendingHist: null
+};
+
+// ======================== Init ========================
+function init() {
+  var k = localStorage.getItem(C.AK);
+  if (k) { S.key = k; document.getElementById('apiKeyInput').value = k; setKeyStat(true); }
+  else { setKeyStat(false); }
+  loadHist();
+  setStat('ready');
+  document.getElementById('promptInput').addEventListener('input', function() {
+    document.getElementById('charCount').textContent = this.value.length;
+  });
+  document.getElementById('promptInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); generate(); }
+  });
+  document.getElementById('imgFile1').addEventListener('change', function(e) { handleFile(e, 1); });
+  document.getElementById('imgFile2').addEventListener('change', function(e) { handleFile(e, 2); });
+  document.getElementById('imgUrl1').addEventListener('input', function(e) { handleUrl(e, 1); });
+  document.getElementById('imgUrl2').addEventListener('input', function(e) { handleUrl(e, 2); });
+  document.getElementById('endFrameToggle').addEventListener('change', function() {
+    document.getElementById('endFrameWrap').style.display = this.checked ? 'block' : 'none';
+    if (!this.checked) { clearImg(2); }
+  });
+  updateCost();
+  setupDragDrop();
+  updateGenBtn('ready');
+}
+
+// ======================== Key ========================
+function toggleKey() { var e = document.getElementById('apiKeyInput'); e.type = e.type === 'password' ? 'text' : 'password'; }
+function saveKey() {
+  var k = document.getElementById('apiKeyInput').value.trim();
+  if (!k) { toast('请输入 API Key', 'error'); return; }
+  S.key = k; localStorage.setItem(C.AK, k); setKeyStat(true); toast('已保存', 'success');
+}
+function setKeyStat(on) {
+  var e = document.getElementById('apiStatus');
+  if (on) { e.className = 'api-status configured'; e.innerHTML = '<span>●</span> 已配置'; setStat('ready'); }
+  else { e.className = 'api-status not-configured'; e.innerHTML = '<span>●</span> 未配置'; setStat('no-key'); }
+  updateGenBtn('ready');
+}
+function setStat(s) {
+  var d = document.getElementById('statusDot'), t = document.getElementById('statusText');
+  var m = { ready: ['online','就绪'], generating: ['online','生成中...'], 'no-key': ['offline','未配置 Key'] };
+  var x = m[s] || ['offline','就绪'];
+  d.className = 'status-dot ' + x[0]; t.textContent = x[1];
+}
+
+// ======================== Drag & Drop ========================
+function setupDragDrop() {
+  ['imgDropzone1','imgDropzone2'].forEach(function(id) {
+    var dz = document.getElementById(id);
+    if (!dz) return;
+    dz.addEventListener('dragover', function(e) { e.preventDefault(); this.style.borderColor = 'var(--accent)'; this.style.background = 'rgba(102,126,234,0.06)'; });
+    dz.addEventListener('dragleave', function(e) { this.style.borderColor = ''; this.style.background = ''; });
+    dz.addEventListener('drop', function(e) {
+      e.preventDefault(); this.style.borderColor = ''; this.style.background = '';
+      var f = e.dataTransfer.files[0];
+      if (f && f.type.startsWith('image/')) {
+        var idx = id === 'imgDropzone1' ? 1 : 2;
+        document.getElementById('imgFile' + idx).files = e.dataTransfer.files;
+        handleFile({ target: { files: [f] } }, idx);
+      }
+    });
+  });
+}
+
+// ======================== Mode/Model ========================
+function switchMode(el, m) {
+  document.querySelectorAll('.mode-pill').forEach(function(p) { p.classList.remove('active'); });
+  el.classList.add('active'); S.mode = m;
+  document.getElementById('imageGroup').style.display = m === 'image' ? 'block' : 'none';
+  updateCost();
+}
+function pickModel(el, m) {
+  document.querySelectorAll('.model-pill').forEach(function(p) { p.classList.remove('active'); });
+  el.classList.add('active'); S.model = m; updateCost();
+}
+function updateCost() {
+  var dur = parseInt(document.getElementById('duration').value) || 5;
+  var price = C.PRICE[S.model];
+  var total = (dur * price).toFixed(1);
+  document.getElementById('costNum').textContent = '¥' + total;
+  document.querySelector('.cost-display .note').textContent = S.model === 'fast' ? '（Fast）' : '（Standard）';
+  var d = document.getElementById('costDisplay');
+  d.classList.remove('cost-animate');
+  void d.offsetWidth;
+  d.classList.add('cost-animate');
+}
+
+// ======================== Compare Mode ========================
+function toggleCompare() {
+  S.compare = document.getElementById('compareToggle').checked;
+  document.getElementById('comparePanel').style.display = S.compare ? 'block' : 'none';
+}
+function randSeed() { document.getElementById('seedInput').value = Math.floor(Math.random() * 2147483647); }
+
+// ======================== Prompt ========================
+function fillPrompt(text, el) {
+  // Card click feedback
+  if (el) { el.classList.add('clicked'); setTimeout(function() { el.classList.remove('clicked'); }, 300); }
+  document.getElementById('promptInput').value = text;
+  document.getElementById('promptInput').focus();
+  document.getElementById('charCount').textContent = text.length;
+  // Input flash
+  var inp = document.getElementById('promptInput');
+  inp.classList.add('prompt-flash');
+  setTimeout(function() { inp.classList.remove('prompt-flash'); }, 400);
+  window.scrollTo({ top: document.getElementById('promptInput').getBoundingClientRect().top + window.scrollY - 140, behavior: 'smooth' });
+  toast('已填入提示词', 'info');
+}
+
+// ======================== Image ========================
+function handleFile(e, idx) {
+  var f = e.target.files[0]; if (!f) return;
+  var r = new FileReader();
+  r.onload = function(ev) {
+    document.getElementById('imgUrl' + idx).value = ev.target.result;
+    renderImgCard(idx, ev.target.result);
+  };
+  r.readAsDataURL(f);
+}
+function handleUrl(e, idx) {
+  var v = e.target.value.trim();
+  if (idx === 1 && v) renderImgCard(1, v);
+  else if (idx === 1 && !v) { clearImg(1); }
+  if (idx === 2 && v) renderImgCard(2, v);
+  else if (idx === 2 && !v) { clearImg(2); }
+}
+function renderImgCard(idx, src) {
+  var container = document.getElementById('imgCards' + (idx === 1 ? '' : '2'));
+  var dz = document.getElementById('imgDropzone' + idx);
+  if (dz) dz.style.display = 'none';
+  var existing = container.querySelector('.image-card[data-idx="' + idx + '"]');
+  if (existing) existing.remove();
+  var card = document.createElement('div');
+  card.className = 'image-card';
+  card.setAttribute('data-idx', idx);
+  var label = idx === 1 ? '首帧' : '结束帧';
+  card.innerHTML = '<img src="' + src + '" alt="preview">'
+    + '<button class="img-del" onclick="clearImg(' + idx + ')">✕</button>'
+    + '<span class="img-label">' + label + '</span>';
+  container.appendChild(card);
+  S['img' + idx] = src;
+}
+function clearImg(idx) {
+  S['img' + idx] = null;
+  document.getElementById('imgUrl' + idx).value = '';
+  document.getElementById('imgFile' + idx).value = '';
+  var container = document.getElementById('imgCards' + (idx === 1 ? '' : '2'));
+  var card = container.querySelector('.image-card[data-idx="' + idx + '"]');
+  if (card) card.remove();
+  var dz = document.getElementById('imgDropzone' + idx);
+  if (dz) dz.style.display = 'flex';
+}
+async function uploadImgIfNeeded(dataUrl) {
+  if (!dataUrl) return null;
+  if (dataUrl.startsWith('http://') || dataUrl.startsWith('https://')) return dataUrl;
+  if (dataUrl.startsWith('data:image')) {
+    if (!C.UPLOAD) throw new Error('本地图片需通过代理上传，请使用 localhost 访问');
+    toast('正在上传图片...', 'info');
+    var r = await fetch(C.UPLOAD, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: dataUrl.split(',')[1] })
+    });
+    if (!r.ok) throw new Error('图片上传失败');
+    var d = await r.json();
+    return d.url;
+  }
+  return dataUrl;
+}
+
+// ======================== Error mapping ========================
+var ERR_MSGS = {
+  'insufficient': '❌ 账户余额不足，请前往 Atlas Cloud 充值',
+  'balance': '❌ 账户余额不足，请前往 Atlas Cloud 充值',
+  'quota': '❌ API 调用额度不足',
+  'unauthorized': '❌ API Key 无效或已过期，请检查',
+  'forbidden': '❌ 无权限访问，请检查 API Key',
+  'not found': '❌ 资源不存在',
+  'rate limit': '⏳ 请求过于频繁，请稍后重试',
+  'timeout': '⏳ 请求超时，请重试',
+  'content': '❌ 内容审核未通过，请修改提示词',
+  'moderation': '❌ 内容审核未通过，请修改提示词',
+  'safety': '❌ 内容安全审查未通过',
+  'invalid': '❌ 参数错误，请检查输入',
+  'parameter': '❌ 参数错误，请检查输入',
+  'unsupported': '❌ 不支持的参数组合',
+  'failed': '❌ 生成失败',
+  'error': '❌ 服务异常'
+};
+function friendlyErr(msg) {
+  if (!msg) return '❌ 未知错误';
+  var m = msg.toLowerCase();
+  for (var key in ERR_MSGS) {
+    if (m.includes(key)) return ERR_MSGS[key];
+  }
+  return '❌ ' + msg;
+}
+function showErr(msg) {
+  var box = document.getElementById('errorBox');
+  box.innerHTML = friendlyErr(msg);
+  box.classList.add('show');
+  setTimeout(function() { box.classList.remove('show'); }, 30000);
+}
+
+// ======================== Gen Button ========================
+function updateGenBtn(state) {
+  var btn = document.getElementById('genBtn');
+  btn.onclick = null;
+  btn.disabled = false;
+  btn.className = 'btn btn-gen';
+
+  if (state === 'ready' && !S.key) {
+    btn.innerHTML = '🔒 请先配置 API 密钥';
+    btn.className += ' btn-nokey';
+    btn.onclick = function() { document.getElementById('apiKeyInput').focus(); window.scrollTo({top:0,behavior:'smooth'}); };
+    return;
+  }
+
+  switch (state) {
+    case 'submit':
+      btn.innerHTML = '<span class="spinner-btn"></span> 正在提交...';
+      btn.className += ' btn-processing';
+      btn.disabled = true;
+      break;
+    case 'queued':
+      btn.innerHTML = '<span class="spinner-btn"></span> 排队中（预计1-2分钟）';
+      btn.className += ' btn-queued';
+      btn.disabled = true;
+      break;
+    case 'processing':
+      btn.innerHTML = '<span class="spinner-btn"></span> 生成中...';
+      btn.className += ' btn-processing';
+      btn.disabled = true;
+      break;
+    case 'done':
+      btn.textContent = '✅ 完成！点击查看';
+      btn.className += ' btn-done';
+      btn.onclick = function() { document.getElementById('resultSection').scrollIntoView({behavior:'smooth'}); };
+      break;
+    default:
+      btn.innerHTML = '🚀 开始生成视频';
+      btn.className += ' btn-primary';
+      btn.onclick = generate;
+      if (!S.key) { btn.innerHTML = '🔒 请先配置 API 密钥'; btn.className += ' btn-nokey'; btn.onclick = function() { document.getElementById('apiKeyInput').focus(); window.scrollTo({top:0,behavior:'smooth'}); }; }
+  }
+}
+
+// ======================== Generate ========================
+async function generate() {
+  if (!S.key) { toast('请先配置 API Key', 'error'); document.getElementById('apiKeyInput').focus(); return; }
+  document.getElementById('errorBox').classList.remove('show');
+
+  var prompt = document.getElementById('promptInput').value.trim();
+  if (!prompt) { toast('请输入提示词', 'error'); document.getElementById('promptInput').focus(); return; }
+
+  updateGenBtn('submit');
+  document.getElementById('progSection').classList.add('active');
+  document.getElementById('resultSection').classList.remove('active');
+  document.getElementById('progBar').style.width = '0%';
+  document.getElementById('progPct').textContent = '0%';
+  document.getElementById('progText').textContent = '准备中...';
+  document.getElementById('progSpinner').style.display = 'inline-block';
+  document.getElementById('shareRow').style.display = 'none';
+  setStat('generating');
+  S.prompt = prompt;
+
+  var isCompare = S.compare && document.getElementById('compareToggle').checked;
+
+  try {
+    var modelId = C.MODELS[S.mode][S.model];
+    var duration = parseInt(document.getElementById('duration').value) || 5;
+    var resolution = document.getElementById('resolution').value;
+    var ratio = document.getElementById('ratio').value;
+    var audio = document.getElementById('audioToggle').checked;
+    var wm = document.getElementById('watermarkToggle').checked;
+    var neg = document.getElementById('negativePrompt').value.trim() || undefined;
+    var seed1 = document.getElementById('seedInput').value.trim();
+    var motion = document.getElementById('motionIntensity').value || undefined;
+
+    var firstImg = null, lastImg = null;
+    if (S.mode === 'image') {
+      var raw1 = document.getElementById('imgUrl1').value.trim();
+      var raw2 = document.getElementById('imgUrl2').value.trim();
+      if (!raw1) throw new Error('图生视频请提供首帧图片');
+      firstImg = await uploadImgIfNeeded(raw1);
+      if (raw2) lastImg = await uploadImgIfNeeded(raw2);
+    }
+
+    function buildReq(seed, dur) {
+      var b = {
+        model: modelId, prompt: prompt,
+        duration: dur || duration,
+        resolution: resolution, ratio: ratio,
+        generate_audio: audio, watermark: wm
+      };
+      if (firstImg) b.image = firstImg;
+      if (lastImg) b.last_image = lastImg;
+      if (neg) b.negative_prompt = neg;
+      if (seed) b.seed = parseInt(seed);
+      if (motion) b.camera_motion = motion;
+      return b;
+    }
+
+    if (isCompare) {
+      var seed2 = document.getElementById('seedInput2').value.trim();
+      var dur2 = document.getElementById('duration2').value;
+      if (!seed2 && !dur2) { seed2 = Math.floor(Math.random() * 2147483647).toString(); }
+
+      var body1 = buildReq(seed1, null);
+      var body2 = buildReq(seed2, dur2 || null);
+
+      document.getElementById('progSingle').style.display = 'none';
+      document.getElementById('progDual').style.display = 'block';
+      document.getElementById('progBar1').style.width = '0%';
+      document.getElementById('progBar2').style.width = '0%';
+      document.getElementById('dualPct1').textContent = '0%';
+      document.getElementById('dualPct2').textContent = '0%';
+
+      var result1 = await callApi(C.GEN, 'POST', body1);
+      var id1 = result1.data?.id || result1.id;
+      if (!id1) throw new Error('版本 1 未返回任务 ID');
+      var result2 = await callApi(C.GEN, 'POST', body2);
+      var id2 = result2.data?.id || result2.id;
+      if (!id2) throw new Error('版本 2 未返回任务 ID');
+
+      S.tasks[0].id = id1; S.tasks[0].done = false; S.tasks[0].url = '';
+      S.tasks[1].id = id2; S.tasks[1].done = false; S.tasks[1].url = '';
+      document.getElementById('dualTask1Id').textContent = id1.slice(0,16)+'...';
+      document.getElementById('dualTask2Id').textContent = id2.slice(0,16)+'...';
+
+      updateGenBtn('queued');
+      toast('两个任务已提交', 'info');
+      startDualPoll(0);
+      startDualPoll(1);
+    } else {
+      document.getElementById('progSingle').style.display = 'block';
+      document.getElementById('progDual').style.display = 'none';
+
+      var body = buildReq(seed1, null);
+      var result = await callApi(C.GEN, 'POST', body);
+      var taskId = result.data?.id || result.id;
+      if (!taskId) throw new Error('API 未返回任务 ID');
+
+      S.taskId = taskId;
+      document.getElementById('taskIdDisplay').textContent = '任务 ID: ' + taskId;
+      toast('任务已提交', 'info');
+      updateGenBtn('queued');
+      startPoll(taskId);
+    }
+  } catch (err) {
+    updateGenBtn('ready');
+    document.getElementById('progSection').classList.remove('active');
+    document.getElementById('progDual').style.display = 'none';
+    document.getElementById('progSingle').style.display = 'block';
+    setStat('ready');
+    showErr(err.message);
+    toast('提交失败: ' + err.message, 'error');
+  }
+}
+
+// ======================== API ========================
+async function callApi(path, method, body) {
+  var r = await fetch(C.API + path, {
+    method: method,
+    headers: { 'Authorization': 'Bearer ' + S.key, 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  var d;
+  try { d = await r.json(); } catch (_) { d = null; }
+  if (!r.ok) {
+    var m = d?.error?.message || d?.error || d?.message || 'HTTP ' + r.status;
+    throw new Error(m);
+  }
+  return d;
+}
+
+// ======================== Poll (Single) ========================
+function startPoll(id) {
+  if (S.polling) return;
+  S.polling = true; S.pollStart = Date.now();
+  var bar = document.getElementById('progBar'), st = document.getElementById('progText'),
+      pct = document.getElementById('progPct'), sp = document.getElementById('progSpinner');
+
+  function poll() {
+    if (!S.polling) return;
+    callApi(C.POLL + id, 'GET').then(function(data) {
+      var t = data.data || data;
+      var stat = t.status;
+      var el = Date.now() - S.pollStart;
+      var es = Math.floor(el/1000);
+      var estr = (es >= 60 ? Math.floor(es/60)+'分' : '') + (es%60) + '秒';
+      var p = 0, txt = '';
+      switch (stat) {
+        case 'queued': case 'pending': p = 5; txt = '排队中（预计1-2分钟）'; updateGenBtn('queued'); break;
+        case 'processing': case 'running': case 'in_progress':
+          p = Math.min(15 + Math.floor(el/2000), 90);
+          txt = '生成中 ('+estr+')'; updateGenBtn('processing'); break;
+        case 'completed': case 'succeeded': case 'done': p = 100; txt = '✅ 完成！'; break;
+        case 'failed': case 'error': p = 0; break;
+        default: p = 10; txt = stat+' ('+estr+')';
+      }
+      bar.style.width = p+'%'; pct.textContent = p+'%';
+      if (txt) st.textContent = txt;
+
+      if (['completed','succeeded','done'].includes(stat)) {
+        S.polling = false; sp.style.display = 'none';
+        var outs = t.outputs || t.video_urls || [];
+        var url = outs[0] || t.video_url || t.url || t.result?.video_url;
+        if (url) {
+          showResult(url);
+          updateGenBtn('done');
+          // Store pending history, save when overlay is dismissed
+          S.pendingHist = { id: id, prompt: S.prompt, model: S.model+'/'+S.mode,
+            res: document.getElementById('resolution').value,
+            ratio: document.getElementById('ratio').value,
+            dur: document.getElementById('duration').value,
+            status: 'done', url: url, ts: Date.now() };
+          showResultOverlay(url, S.prompt);
+        } else {
+          toast('未找到视频链接: '+JSON.stringify(t).slice(0,200), 'error');
+          updateGenBtn('ready');
+        }
+        setStat('ready'); return;
+      }
+      if (['failed','error'].includes(stat)) {
+        S.polling = false; sp.style.display = 'none';
+        var em = t.error?.message || t.error || stat;
+        st.textContent = '❌ '+em; bar.style.background = 'var(--error)';
+        setStat('ready'); showErr(em); toast('生成失败', 'error');
+        updateGenBtn('ready');
+        addHist({ id: id, prompt: S.prompt, model: S.model, status: 'fail', error: em, ts: Date.now() });
+        return;
+      }
+      if (el > C.MAX_POLL) {
+        S.polling = false; sp.style.display = 'none';
+        st.textContent = '⚠️ 超时'; toast('轮询超时', 'info'); setStat('ready'); updateGenBtn('ready'); return;
+      }
+      S.pollTimer = setTimeout(poll, C.POLL_INTERVAL);
+    }).catch(function(err) {
+      if (Date.now() - S.pollStart > 30000) {
+        S.pollTimer = setTimeout(poll, C.POLL_INTERVAL * 2);
+      } else {
+        S.polling = false; sp.style.display = 'none';
+        st.textContent = '❌ '+err.message; setStat('ready'); showErr(err.message); updateGenBtn('ready');
+      }
+    });
+  }
+  poll();
+}
+
+// ======================== Poll (Dual) ========================
+function startDualPoll(idx) {
+  var id = S.tasks[idx].id;
+  var bar = document.getElementById('progBar' + (idx+1));
+  var txt = document.getElementById('dualText' + (idx+1));
+  var pct = document.getElementById('dualPct' + (idx+1));
+  var start = Date.now();
+
+  function poll() {
+    if (S.tasks[idx].done) return;
+    callApi(C.POLL + id, 'GET').then(function(data) {
+      var t = data.data || data;
+      var stat = t.status;
+      var el = Date.now() - start;
+      var es = Math.floor(el/1000);
+      var estr = (es >= 60 ? Math.floor(es/60)+'分' : '') + (es%60) + '秒';
+      var p = 0, label = '';
+      switch (stat) {
+        case 'queued': case 'pending': p = 5; label = '排队中 ('+estr+')'; break;
+        case 'processing': case 'running': case 'in_progress':
+          p = Math.min(15 + Math.floor(el/2000), 90);
+          label = '生成中 ('+estr+')'; break;
+        case 'completed': case 'succeeded': case 'done': p = 100; label = '✅ 完成！'; break;
+        case 'failed': case 'error': p = 0; label = '❌ 失败'; break;
+        default: p = 10; label = stat+' ('+estr+')';
+      }
+      bar.style.width = p+'%'; pct.textContent = p+'%';
+      txt.textContent = label;
+
+      if (['completed','succeeded','done'].includes(stat)) {
+        S.tasks[idx].done = true;
+        var outs = t.outputs || t.video_urls || [];
+        S.tasks[idx].url = outs[0] || t.video_url || t.url || t.result?.video_url;
+        S.resultVideoUrls[idx] = S.tasks[idx].url;
+        checkDualDone(); return;
+      }
+      if (['failed','error'].includes(stat)) {
+        S.tasks[idx].done = true;
+        var em = t.error?.message || t.error || stat;
+        txt.textContent = '❌ '+ em;
+        bar.style.background = 'var(--error)';
+        checkDualDone(); return;
+      }
+      if (el > C.MAX_POLL) {
+        S.tasks[idx].done = true;
+        txt.textContent = '⚠️ 超时';
+        checkDualDone(); return;
+      }
+      S.tasks[idx].pollTimer = setTimeout(poll, C.POLL_INTERVAL);
+    }).catch(function(err) {
+      if (Date.now() - start < 30000) {
+        S.tasks[idx].pollTimer = setTimeout(poll, C.POLL_INTERVAL * 2);
+      } else {
+        S.tasks[idx].done = true;
+        txt.textContent = '❌ ' + err.message;
+        checkDualDone();
+      }
+    });
+  }
+  poll();
+}
+
+function checkDualDone() {
+  if (S.tasks[0].done && S.tasks[1].done) {
+    setStat('ready');
+    var urls = [];
+    if (S.tasks[0].url) urls.push(S.tasks[0].url);
+    if (S.tasks[1].url) urls.push(S.tasks[1].url);
+    if (urls.length > 0) {
+      showDualResult(S.tasks[0].url, S.tasks[1].url);
+      if (S.tasks[0].url) addHist({ id: S.tasks[0].id, prompt: S.prompt, model: S.model+'/'+S.mode+'(对比)',
+        res: document.getElementById('resolution').value, ratio: document.getElementById('ratio').value,
+        dur: document.getElementById('duration').value, status: 'done', url: S.tasks[0].url, ts: Date.now() });
+      if (S.tasks[1].url) addHist({ id: S.tasks[1].id, prompt: S.prompt, model: S.model+'/'+S.mode+'(对比)',
+        res: document.getElementById('resolution').value, ratio: document.getElementById('ratio').value,
+        dur: document.getElementById('duration2').value || document.getElementById('duration').value,
+        status: 'done', url: S.tasks[1].url, ts: Date.now() });
+    }
+    updateGenBtn('done');
+  } else if (S.tasks[0].done || S.tasks[1].done) {
+    updateGenBtn('processing');
+  }
+}
+
+// ======================== Result ========================
+function showResult(url) {
+  S.videoUrl = url;
+  document.getElementById('resultSection').classList.add('active');
+  document.getElementById('resultSingle').style.display = 'block';
+  document.getElementById('resultDual').style.display = 'none';
+  document.getElementById('resultVideo').src = url;
+  document.getElementById('shareRow').style.display = 'flex';
+}
+function showDualResult(url1, url2) {
+  S.resultVideoUrls = [url1||'', url2||''];
+  document.getElementById('resultSection').classList.add('active');
+  document.getElementById('resultSingle').style.display = 'none';
+  document.getElementById('resultDual').style.display = 'block';
+  if (url1) document.getElementById('resultVideo1').src = url1;
+  if (url2) document.getElementById('resultVideo2').src = url2;
+  document.getElementById('shareRow').style.display = 'flex';
+}
+function dlVideo() {
+  if (S.compare && document.getElementById('compareToggle').checked && S.resultVideoUrls.length >= 2) {
+    S.resultVideoUrls.forEach(function(u, i) { if (!u) return; var a = document.createElement('a'); a.href = u; a.download = 'seedance-v'+(i+1)+'-'+Date.now()+'.mp4'; a.click(); a.remove(); });
+    toast('两个版本已开始下载', 'success'); return;
+  }
+  if (!S.videoUrl) return;
+  var a = document.createElement('a'); a.href = S.videoUrl; a.download = 'seedance-'+Date.now()+'.mp4';
+  a.click(); a.remove();
+}
+function copyLink() {
+  if (S.compare && document.getElementById('compareToggle').checked && S.resultVideoUrls.length >= 2) {
+    var txt = 'Seedance Studio 对比结果：\n版本1: '+(S.resultVideoUrls[0]||'无')+'\n版本2: '+(S.resultVideoUrls[1]||'无');
+    navigator.clipboard.writeText(txt).then(function() { toast('两个链接已复制', 'success'); }); return;
+  }
+  if (!S.videoUrl) { toast('无链接', 'error'); return; }
+  navigator.clipboard.writeText(S.videoUrl).then(function() { toast('已复制', 'success'); });
+}
+function shareAction(type) {
+  var urls = S.compare && document.getElementById('compareToggle').checked ? S.resultVideoUrls : [S.videoUrl];
+  switch (type) {
+    case 'copy':
+      navigator.clipboard.writeText(urls.length > 1 ? '版本1: '+urls[0]+'\n版本2: '+urls[1] : urls[0]).then(function() { toast('链接已复制', 'success'); }); break;
+    case 'download':
+      dlVideo(); break;
+    case 'wechat':
+      var txt = urls.length > 1 ? '我用 Seedance Studio 生成了两个视频对比：\n版本1: '+urls[0]+'\n版本2: '+urls[1] : '我用 Seedance Studio 生成了一个 AI 视频：\n'+urls[0];
+      navigator.clipboard.writeText(txt).then(function() { toast('分享文本已复制，请粘贴到微信发送', 'success'); }); break;
+  }
+}
+function resetGen() {
+  document.getElementById('resultSection').classList.remove('active');
+  document.getElementById('progSection').classList.remove('active');
+  document.getElementById('progSingle').style.display = 'block';
+  document.getElementById('progDual').style.display = 'none';
+  document.getElementById('progBar').style.width = '0%';
+  document.getElementById('progPct').textContent = '0%';
+  document.getElementById('progText').textContent = '任务已提交...';
+  document.getElementById('progSpinner').style.display = 'inline-block';
+  document.getElementById('progBar').style.background = '';
+  document.getElementById('errorBox').classList.remove('show');
+  document.getElementById('shareRow').style.display = 'none';
+  S.videoUrl = ''; S.taskId = null;
+  S.tasks = [{id:null,url:'',done:false,pollTimer:null},{id:null,url:'',done:false,pollTimer:null}];
+  S.resultVideoUrls = [];
+  updateGenBtn('ready');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ======================== Result Overlay ========================
+function showResultOverlay(url, prompt) {
+  var overlay = document.getElementById('resultOverlay');
+  document.getElementById('roVideo').src = url;
+  document.getElementById('roPrompt').textContent = (prompt||'').slice(0, 80) + ((prompt||'').length > 80 ? '...' : '');
+  overlay.classList.add('open');
+}
+function savePendingHist() {
+  if (S.pendingHist) { addHist(S.pendingHist); S.pendingHist = null; }
+}
+function closeResultOverlay() {
+  savePendingHist();
+  document.getElementById('resultOverlay').classList.remove('open');
+}
+function roDownload() {
+  savePendingHist();
+  if (S.videoUrl) { var a = document.createElement('a'); a.href = S.videoUrl; a.download = 'seedance-'+Date.now()+'.mp4'; a.click(); a.remove(); }
+}
+function roCopy() {
+  savePendingHist();
+  if (S.videoUrl) { navigator.clipboard.writeText(S.videoUrl).then(function() { toast('已复制', 'success'); }); }
+  else { toast('无链接', 'error'); }
+}
+function roAgain() {
+  savePendingHist();
+  document.getElementById('resultOverlay').classList.remove('open');
+  resetGen();
+  document.getElementById('promptInput').focus();
+}
+// Close result overlay on backdrop click
+document.addEventListener('click', function(e) {
+  if (e.target.id === 'resultOverlay') closeResultOverlay();
+});
+
+// ======================== History ========================
+function addHist(e) {
+  try { var d = localStorage.getItem(C.HK); var h = d ? JSON.parse(d) : []; h.unshift(e); if (h.length > 50) h.length = 50; localStorage.setItem(C.HK, JSON.stringify(h)); renderHist(h); } catch(_) {}
+}
+function loadHist() {
+  try { var d = localStorage.getItem(C.HK); if (d) renderHist(JSON.parse(d)); } catch(_) {}
+}
+function renderHist(h) {
+  var el = document.getElementById('histList'), cb = document.getElementById('clearHistBtn'), va = document.getElementById('viewAllBtn');
+  if (!h || !h.length) {
+    el.innerHTML = '<div class="history-empty"><div class="empty-icon">🎬</div><p>生成你的第一个视频吧，它会出现在这里</p><button class="btn btn-primary btn-small" onclick="document.getElementById(\'promptInput\').focus();window.scrollTo({top:0,behavior:\'smooth\'})">🚀 去生成</button></div>';
+    cb.style.display = 'none'; va.style.display = 'none'; return;
+  }
+  cb.style.display = 'inline-flex';
+  va.style.display = h.length > 5 ? 'inline-flex' : 'none';
+
+  var show = h.slice(0, 5);
+  el.innerHTML = show.map(function(it, i) {
+    var sc = it.status === 'done' ? 'done' : 'fail';
+    var sl = it.status === 'done' ? '完成' : '失败';
+    var meta = (it.res || '') + (it.ratio ? '·'+it.ratio : '') + (it.dur ? '·'+it.dur+'s' : '');
+    var ts = it.ts ? new Date(it.ts).toLocaleString('zh-CN') : '';
+    var countdown = '';
+    if (it.url && it.ts) {
+      var expire = it.ts + 86400000;
+      var left = expire - Date.now();
+      if (left > 0) { var hh = Math.floor(left / 3600000), mm = Math.floor((left % 3600000) / 60000); countdown = '<span class="h-countdown">⏳ '+hh+'h'+mm+'m</span>'; }
+      else { countdown = '<span class="h-countdown" style="color:var(--error);">已过期</span>'; }
+    }
+    var thumb = it.url
+      ? '<div class="h-thumb" onclick="showResult(\''+it.url+'\');document.getElementById(\'resultSection\').scrollIntoView({behavior:\'smooth\'});document.getElementById(\'resultSingle\').style.display=\'block\';document.getElementById(\'resultDual\').style.display=\'none\'">'
+        + '<video src="'+it.url+'" muted preload="metadata" playsinline></video><div class="h-play">▶</div></div>'
+      : '<div class="h-thumb" style="display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--bg-primary);">🎬</div>';
+    return '<div class="history-item">'
+      + thumb
+      + '<div class="h-info" onclick="reusePrompt(\''+escQ(it.prompt)+'\')" title="点击复用提示词">'
+      + '<div class="h-prompt">'+esc(it.prompt||'')+'</div>'
+      + '<div class="h-meta"><span>'+meta+'</span><span>'+ts+'</span>'+countdown+'</div></div>'
+      + '<span class="h-badge '+sc+'">'+sl+'</span>'
+      + '<div class="h-actions">'
+      + (it.url ? '<button class="btn-xs" onclick="event.stopPropagation();showResult(\''+it.url+'\');document.getElementById(\'resultSection\').scrollIntoView({behavior:\'smooth\'});document.getElementById(\'resultSingle\').style.display=\'block\';document.getElementById(\'resultDual\').style.display=\'none\'">查看</button>'
+        + '<button class="btn-xs" onclick="event.stopPropagation();dlUrl(\''+it.url+'\')">下载</button>' : '')
+      + '<button class="btn-xs" style="color:var(--error);" onclick="event.stopPropagation();delHist('+i+')">✕</button>'
+      + '</div></div>';
+  }).join('');
+  setTimeout(function() { el.querySelectorAll('.h-thumb video').forEach(function(v) { v.currentTime = 0.1; }); }, 600);
+}
+function reusePrompt(p) {
+  document.getElementById('promptInput').value = p;
+  document.getElementById('promptInput').focus();
+  document.getElementById('charCount').textContent = p.length;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  toast('已填入提示词', 'info');
+}
+function escQ(s) { return s.replace(/'/g,"\\'").replace(/"/g,'\\"'); }
+function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function delHist(i) { try { var d = JSON.parse(localStorage.getItem(C.HK)); d.splice(i,1); localStorage.setItem(C.HK,JSON.stringify(d)); renderHist(d); } catch(_) {} }
+function clearHist() { if (!confirm('确定清空？')) return; localStorage.removeItem(C.HK); renderHist([]); closeWorksModal(); toast('已清空', 'info'); }
+function dlUrl(u) { var a = document.createElement('a'); a.href = u; a.download = 'seedance-'+Date.now()+'.mp4'; a.click(); a.remove(); }
+
+// ======================== Works Modal ========================
+function openWorksModal() {
+  document.getElementById('worksModal').classList.add('open');
+  document.getElementById('worksSearch').value = '';
+  renderAllWorks();
+}
+function closeWorksModal() { document.getElementById('worksModal').classList.remove('open'); }
+function renderAllWorks(filter) {
+  var grid = document.getElementById('worksGrid'), empty = document.getElementById('worksEmpty'), count = document.getElementById('worksCount');
+  try {
+    var d = localStorage.getItem(C.HK); var h = d ? JSON.parse(d) : [];
+    if (filter) { var f = filter.toLowerCase(); h = h.filter(function(it) { return (it.prompt||'').toLowerCase().includes(f); }); }
+    count.textContent = '共 ' + h.length + ' 个作品';
+    if (!h.length) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    grid.innerHTML = h.map(function(it) {
+      var meta = (it.res||'') + (it.ratio ? '·'+it.ratio : '') + (it.dur ? '·'+it.dur+'s' : '');
+      var sc = it.status === 'done' ? '完成' : '失败';
+      var ts = it.ts ? new Date(it.ts).toLocaleString('zh-CN') : '';
+      var vid = it.url ? '<video src="'+it.url+'" muted preload="metadata" playsinline></video>' : '<div style="height:100px;display:flex;align-items:center;justify-content:center;background:var(--bg-primary);color:var(--text-secondary);font-size:13px;">无视频</div>';
+      return '<div class="work-card">'+vid+'<div class="work-info"><div class="w-prompt" title="'+esc(it.prompt||'')+'">'+esc(it.prompt||'')+'</div><div class="w-meta">'+meta+' · '+ts+' · <span style="color:'+(it.status==='done'?'var(--success)':'var(--error)')+'">'+sc+'</span></div></div>'+(it.url?'<div class="work-actions"><button class="btn-xs" onclick="dlUrl(\''+it.url+'\')">⬇️ 下载</button><button class="btn-xs" onclick="reusePrompt(\''+escQ(it.prompt)+'\');closeWorksModal()">📝 复用提示词</button></div>':'')+'</div>';
+    }).join('');
+    setTimeout(function() { grid.querySelectorAll('video').forEach(function(v) { v.currentTime = 0.1; }); }, 500);
+  } catch(_) {}
+}
+function filterWorks() { renderAllWorks(document.getElementById('worksSearch').value.trim()); }
+document.addEventListener('click', function(e) { if (e.target.id === 'worksModal') closeWorksModal(); });
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeWorksModal(); });
+
+// ======================== Advanced ========================
+function toggleAdvanced() {
+  var p = document.getElementById('advPanel'), a = document.getElementById('advArrow');
+  p.classList.toggle('open');
+  a.style.transform = p.classList.contains('open') ? 'rotate(90deg)' : 'rotate(0deg)';
+}
+
+// ======================== Toast ========================
+function toast(msg, type) {
+  var c = document.getElementById('toastContainer');
+  var t = document.createElement('div');
+  t.className = 'toast ' + (type || 'info');
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(function() {
+    t.style.opacity = '0'; t.style.transform = 'translateX(100%)';
+    t.style.transition = 'all 0.3s ease';
+    setTimeout(function() { t.remove(); }, 300);
+  }, 3500);
+}
+
+// ======================== Init ========================
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
