@@ -405,6 +405,75 @@
   }
   .cost-animate { animation: costPulse 0.55s ease; }
 
+  /* Drama Workbench */
+  .drama-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .drama-project-input { flex:1; min-width:150px; border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:8px 12px; font-size:13px; font-family:var(--font); outline:none; background:var(--bg-secondary); color:var(--text-primary); transition:border-color 0.2s; }
+  .drama-project-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+  .drama-param-select { border:1.5px solid var(--border); border-radius:var(--radius-xs); padding:6px 10px; font-size:12px; font-family:var(--font); outline:none; background:var(--bg-secondary); color:var(--text-primary); cursor:pointer; }
+  .drama-param-select:focus { border-color:var(--accent); }
+  .drama-toggle { font-size:12px !important; }
+  .drama-cost { font-size:13px; color:var(--text-secondary); white-space:nowrap; }
+  .drama-cost strong { color:var(--accent); }
+  .drama-add-scene { font-size:13px; color:var(--accent); cursor:pointer; font-weight:500; padding:4px 10px; border-radius:var(--radius-xs); transition:background 0.2s; }
+  .drama-add-scene:hover { background:rgba(102,126,234,0.06); }
+  .drama-scene-list { display:flex; flex-direction:column; gap:8px; margin-bottom:10px; max-height:420px; overflow-y:auto; }
+  .drama-scene-card { border:1.5px solid var(--border); border-radius:var(--radius-sm); background:var(--bg-secondary); overflow:hidden; transition:border-color 0.2s; }
+  .drama-scene-card:hover { border-color:var(--accent); }
+  .drama-scene-header { display:flex; align-items:center; justify-content:space-between; padding:6px 10px; background:var(--bg-primary); border-bottom:1px solid var(--border); }
+  .drama-scene-header .num { font-size:11px; font-weight:600; color:var(--text-secondary); }
+  .drama-scene-actions { display:flex; gap:2px; }
+  .drama-scene-actions button { background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:14px; padding:2px 4px; border-radius:3px; transition:all 0.15s; line-height:1; }
+  .drama-scene-actions button:hover { color:var(--accent); background:rgba(102,126,234,0.08); }
+  .drama-scene-actions .del:hover { color:var(--error); background:rgba(239,68,68,0.08); }
+  .drama-scene-body { padding:8px 10px; }
+  .drama-scene-body textarea { width:100%; border:1.5px solid var(--border); border-radius:var(--radius-xs); padding:7px 9px; font-size:13px; font-family:var(--font); resize:vertical; min-height:58px; outline:none; background:var(--bg-secondary); color:var(--text-primary); transition:border-color 0.2s; }
+  .drama-scene-body textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+  .drama-scene-footer { display:flex; align-items:center; gap:8px; padding:5px 10px 8px; flex-wrap:wrap; }
+  .drama-scene-footer .char-check { display:flex; align-items:center; gap:3px; font-size:12px; color:var(--text-secondary); cursor:pointer; }
+  .drama-scene-footer .char-check input { width:14px; height:14px; cursor:pointer; }
+  .drama-scene-footer .tpl-select { margin-left:auto; border:1.5px solid var(--border); border-radius:var(--radius-xs); padding:3px 8px; font-size:11px; font-family:var(--font); outline:none; background:var(--bg-secondary); color:var(--text-primary); cursor:pointer; }
+  .drama-progress { margin:6px 0 10px; }
+  .drama-progress-info { display:flex; justify-content:space-between; font-size:12px; color:var(--text-secondary); margin-bottom:4px; }
+  .drama-progress-bar-wrap { height:6px; background:#e8e8ee; border-radius:3px; overflow:hidden; }
+  .drama-progress-bar { height:100%; background:var(--accent-gradient); border-radius:3px; transition:width 0.5s ease; width:0%; }
+  .drama-advanced { margin-top:8px; }
+  .drama-adv-label { display:block; font-size:11px; color:var(--text-secondary); margin-bottom:2px; }
+  .drama-adv-input { width:100%; border:1.5px solid var(--border); border-radius:var(--radius-xs); padding:6px 8px; font-size:12px; font-family:var(--font); outline:none; background:var(--bg-secondary); color:var(--text-primary); }
+  .drama-adv-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+
+  /* Drama character grid */
+  .drama-char-grid { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+  .drama-char-card { flex:0 0 calc(50% - 4px); border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:8px; cursor:pointer; background:var(--bg-secondary); transition:all 0.2s; position:relative; text-align:center; }
+  .drama-char-card:hover { border-color:var(--accent); box-shadow:0 2px 8px var(--accent-glow); }
+  .drama-char-card .avatar { font-size:22px; display:block; }
+  .drama-char-card .name { font-size:12px; font-weight:500; color:var(--text-primary); margin-top:2px; }
+  .drama-char-card .desc { font-size:10px; color:var(--text-secondary); }
+  .drama-char-card .del-char { position:absolute; top:2px; right:2px; width:16px; height:16px; border-radius:50%; background:rgba(239,68,68,0.1); border:none; color:var(--error); font-size:11px; cursor:pointer; display:none; align-items:center; justify-content:center; line-height:1; padding:0; }
+  .drama-char-card:hover .del-char { display:flex; }
+  .drama-char-card .del-char:hover { background:var(--error); color:white; }
+  .drama-char-add { display:block; text-align:center; font-size:12px; color:var(--accent); cursor:pointer; padding:6px; border:1.5px dashed var(--border); border-radius:var(--radius-xs); transition:all 0.2s; }
+  .drama-char-add:hover { border-color:var(--accent); background:rgba(102,126,234,0.04); }
+
+  /* Template pills */
+  .tpl-pills { display:flex; gap:6px; flex-wrap:wrap; }
+  .tpl-pill { display:flex; align-items:center; gap:4px; padding:5px 12px; border:1.5px solid var(--border); border-radius:16px; font-size:12px; cursor:pointer; background:var(--bg-secondary); color:var(--text-secondary); transition:all 0.2s; font-family:var(--font); }
+  .tpl-pill:hover { border-color:var(--accent); color:var(--accent); }
+  .tpl-pill.active { background:rgba(102,126,234,0.08); border-color:var(--accent); color:var(--accent); }
+
+  /* Drama results */
+  .drama-results { min-height:80px; }
+  .drama-results-empty { text-align:center; padding:20px 8px; font-size:13px; color:var(--text-secondary); }
+  .drama-results-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; max-height:300px; overflow-y:auto; }
+  .drama-result-item { border:1.5px solid var(--border); border-radius:var(--radius-xs); overflow:hidden; transition:border-color 0.2s; position:relative; }
+  .drama-result-item:hover { border-color:var(--accent); }
+  .drama-result-item video { width:100%; display:block; max-height:110px; background:#000; border-radius:0; }
+  .drama-result-item .ri-label { position:absolute; top:3px; left:3px; font-size:9px; padding:1px 5px; border-radius:3px; background:rgba(0,0,0,0.55); color:white; }
+  .drama-result-item .ri-actions { display:flex; gap:2px; padding:3px 5px; border-top:1px solid var(--border); }
+  .drama-result-item .ri-actions button { flex:1; font-size:10px; padding:2px 4px; border:none; border-radius:3px; cursor:pointer; background:var(--bg-primary); color:var(--text-secondary); transition:all 0.15s; font-family:var(--font); }
+  .drama-result-item .ri-actions button:hover { background:var(--accent); color:white; }
+
+  .drama-scene-card.dragging { opacity:0.5; border-style:dashed; }
+
   /* History */
   .history-list { display: flex; flex-direction: column; gap: 6px; }
   .history-item {
@@ -725,6 +794,7 @@
   <div class="card">
     <div class="card-title">🎬 视频生成</div>
 
+    <div id="standardForm">
     <div class="form-grid">
       <!-- Mode -->
       <div class="full-width form-group">
@@ -732,6 +802,7 @@
         <div class="mode-pills">
           <button class="mode-pill active" data-mode="text" onclick="switchMode(this,'text')">✏️ 文生视频</button>
           <button class="mode-pill" data-mode="image" onclick="switchMode(this,'image')">🖼️ 图生视频</button>
+          <button class="mode-pill" data-mode="drama" onclick="switchMode(this,'drama')">🎬 AI短剧</button>
         </div>
       </div>
 
@@ -935,6 +1006,8 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
 
     <button class="btn btn-gen btn-primary" id="genBtn">
       🚀 开始生成视频
@@ -1002,11 +1075,47 @@
     </div>
   </div>
 
+  <!-- Drama Workbench -->
+  <div class="card" id="dramaSection" style="display:none;">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span>🎬 AI短剧工作台</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="drama-cost" id="dramaCostLabel">预估：<strong id="dramaCost">¥0.0</strong></span>
+        <button class="btn btn-primary btn-small" id="dramaBatchBtn" onclick="dramaBatchGen()">⚡ 批量生成全部场景</button>
+      </div>
+    </div>
+    <div class="drama-toolbar">
+      <input type="text" id="dramaProjectName" class="drama-project-input" placeholder="项目名称，如：赛博朋克爱情短剧" style="flex:1;min-width:150px;">
+      <select id="dramaModel" onchange="dramaUpdateCost()" class="drama-param-select"><option value="fast">速度优先 ¥0.7/s</option><option value="standard">质量优先 ¥0.9/s</option></select>
+      <select id="dramaRes" class="drama-param-select"><option value="720p">720p</option><option value="1080p">1080p</option></select>
+      <select id="dramaRatio" class="drama-param-select"><option value="16:9">16:9</option><option value="9:16">9:16</option></select>
+      <select id="dramaDuration" onchange="dramaUpdateCost()" class="drama-param-select"><option value="4">4s</option><option value="5" selected>5s</option><option value="6">6s</option><option value="8">8s</option><option value="10">10s</option><option value="12">12s</option><option value="15">15s</option></select>
+    </div>
+    <div class="drama-toolbar" style="flex-wrap:wrap;gap:8px;">
+      <label class="toggle drama-toggle"><input type="checkbox" id="dramaAudio" checked><span class="toggle-slider"></span> 🎵 环境音效</label>
+      <label class="toggle drama-toggle"><input type="checkbox" id="dramaMark" checked><span class="toggle-slider"></span> 🏷️ AI标识</label>
+      <span class="drama-add-scene" onclick="dramaAddScene()">+ 添加场景</span>
+    </div>
+    <div class="drama-scene-list" id="dramaSceneList"></div>
+    <div class="drama-progress" id="dramaProgress" style="display:none;">
+      <div class="drama-progress-info"><span id="dramaProgText">准备中...</span><span id="dramaProgCount">0/0</span></div>
+      <div class="drama-progress-bar-wrap"><div class="drama-progress-bar" id="dramaProgBar"></div></div>
+    </div>
+    <details class="drama-advanced">
+      <summary style="cursor:pointer;font-size:13px;color:var(--text-secondary);padding:4px 0;">⚙️ 高级参数</summary>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;">
+        <div><label class="drama-adv-label">运动幅度</label><select id="dramaMotion" class="drama-adv-input"><option value="low">低</option><option value="medium" selected>中</option><option value="high">高</option></select></div>
+        <div><label class="drama-adv-label">随机种子</label><input type="text" id="dramaSeed" class="drama-adv-input" placeholder="留空随机"></div>
+        <div><label class="drama-adv-label">负向提示词</label><input type="text" id="dramaNeg" class="drama-adv-input" placeholder="如：模糊、变形"></div>
+      </div>
+    </details>
+  </div>
+
 </div><!-- /col-main -->
 
 <!-- ========== RIGHT COLUMN ========== -->
 <div class="col-side">
-
+  <div id="colSideDefault">
   <!-- Inspiration Gallery -->
   <div class="card">
     <div class="card-title">✨ 灵感墙</div>
@@ -1073,6 +1182,32 @@
       </div>
     </div>
   </div>
+
+  </div><!-- /colSideDefault -->
+
+  <!-- Drama sidebar (visible only in drama mode) -->
+  <div id="colSideDrama" style="display:none;">
+    <!-- Character Library -->
+    <div class="card">
+      <div class="card-title">🎭 角色库 <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--text-secondary);">— 点击角色应用到场景</span></div>
+      <div class="drama-char-grid" id="charGrid"></div>
+      <div class="drama-char-add" onclick="addCharacter()">+ 新建角色</div>
+    </div>
+
+    <!-- Scene Templates -->
+    <div class="card">
+      <div class="card-title">🖼️ 场景模板</div>
+      <div class="tpl-pills" id="tplPills"></div>
+    </div>
+
+    <!-- Generated Results -->
+    <div class="card">
+      <div class="card-title">📋 已生成片段 <span id="resultCount" style="font-weight:400;">(0)</span></div>
+      <div id="dramaResults" class="drama-results">
+        <div class="drama-results-empty">批量生成后，视频会出现在这里</div>
+      </div>
+    </div>
+  </div><!-- /colSideDrama -->
 
 </div><!-- /col-side -->
 
@@ -1222,8 +1357,22 @@ function setupDragDrop() {
 function switchMode(el, m) {
   document.querySelectorAll('.mode-pill').forEach(function(p) { p.classList.remove('active'); });
   el.classList.add('active'); S.mode = m;
+  var isDrama = m === 'drama';
   document.getElementById('imageGroup').style.display = m === 'image' ? 'block' : 'none';
-  updateCost();
+  document.getElementById('standardForm').style.display = isDrama ? 'none' : '';
+  document.getElementById('dramaSection').style.display = isDrama ? 'block' : 'none';
+  document.getElementById('progSection').style.display = isDrama ? 'none' : '';
+  document.getElementById('resultSection').style.display = isDrama ? 'none' : '';
+  if (isDrama) {
+    document.getElementById('genBtn').style.display = 'none';
+    document.getElementById('colSideDefault').style.display = 'none';
+    document.getElementById('colSideDrama').style.display = 'block';
+  } else {
+    document.getElementById('genBtn').style.display = '';
+    document.getElementById('colSideDefault').style.display = '';
+    document.getElementById('colSideDrama').style.display = 'none';
+    updateCost();
+  }
 }
 function pickModel(el, m) {
   document.querySelectorAll('.model-pill').forEach(function(p) { p.classList.remove('active'); });
@@ -1898,8 +2047,327 @@ function toast(msg, type) {
   }, 3500);
 }
 
-// ======================== Init ========================
-document.addEventListener('DOMContentLoaded', init);
+// ======================== Drama Workbench ========================
+var DR = {
+  chars: [
+    { id: 'ch1', name: '男主·林默', avatar: '🧑', desc: '青年，黑色风衣' },
+    { id: 'ch2', name: '女主·苏晚', avatar: '👩', desc: '长发，红色围巾' },
+    { id: 'ch3', name: '摊主·老陈', avatar: '👨', desc: '戴眼镜，围裙' }
+  ],
+  tpls: [
+    { id: 't1', name: '赛博朋克早餐摊', icon: '🍜' },
+    { id: 't2', name: '霓虹街道', icon: '🌃' },
+    { id: 't3', name: '公寓室内', icon: '🏠' },
+    { id: 't4', name: '天桥夜景', icon: '🌉' }
+  ],
+  scenes: [],
+  results: [],
+  generating: false,
+  charIdCounter: 4
+};
+
+function dramaInit() {
+  DR.scenes = [{ id: 's1', desc: '', chars: [], tpl: '' }];
+  DR.results = [];
+  DR.generating = false;
+  dramaRenderAll();
+}
+
+function dramaRenderAll() {
+  dramaRenderScenes();
+  dramaRenderChars();
+  dramaRenderTpls();
+  dramaRenderResults();
+  dramaUpdateCost();
+}
+
+function dramaGenId(prefix) {
+  return prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+}
+
+function dramaAddScene() {
+  if (DR.generating) return;
+  DR.scenes.push({ id: dramaGenId('s'), desc: '', chars: [], tpl: '' });
+  dramaRenderScenes();
+}
+
+function dramaRemoveScene(id) {
+  if (DR.generating || DR.scenes.length <= 1) return;
+  DR.scenes = DR.scenes.filter(function(s) { return s.id !== id; });
+  DR.results = DR.results.filter(function(r) { return r.sceneId !== id; });
+  dramaRenderAll();
+}
+
+function dramaMoveScene(id, dir) {
+  if (DR.generating) return;
+  var idx = -1;
+  for (var i = 0; i < DR.scenes.length; i++) { if (DR.scenes[i].id === id) { idx = i; break; } }
+  if (idx < 0) return;
+  var t = idx + dir;
+  if (t < 0 || t >= DR.scenes.length) return;
+  var tmp = DR.scenes[idx]; DR.scenes[idx] = DR.scenes[t]; DR.scenes[t] = tmp;
+  dramaRenderScenes();
+}
+
+function dramaUpdateScene(id, field, value) {
+  for (var i = 0; i < DR.scenes.length; i++) {
+    if (DR.scenes[i].id === id) { DR.scenes[i][field] = value; break; }
+  }
+}
+
+function dramaAddChar() {
+  var name = prompt('输入角色名称：');
+  if (!name || !name.trim()) return;
+  var desc = prompt('输入角色描述（可选）：');
+  var emojis = ['🧑','👩','👨','👴','👵','🧔','👱','👲','👳','👸','🤴','🦸','🧙','🧝','🧛'];
+  var av = emojis[DR.charIdCounter % emojis.length];
+  DR.chars.push({ id: 'ch' + DR.charIdCounter, name: name.trim(), avatar: av, desc: desc || '' });
+  DR.charIdCounter++;
+  dramaRenderChars();
+  dramaRenderScenes();
+}
+
+function dramaDelChar(id) {
+  if (DR.chars.length <= 1) { toast('至少保留一个角色', 'error'); return; }
+  DR.chars = DR.chars.filter(function(c) { return c.id !== id; });
+  for (var i = 0; i < DR.scenes.length; i++) {
+    DR.scenes[i].chars = DR.scenes[i].chars.filter(function(c) { return c !== id; });
+  }
+  dramaRenderAll();
+}
+
+function dramaPickTpl(id) {
+  var sid = DR.scenes.length > 0 ? DR.scenes[DR.scenes.length - 1].id : null;
+  if (!sid) return;
+  for (var i = 0; i < DR.scenes.length; i++) {
+    if (DR.scenes[i].id === sid) { DR.scenes[i].tpl = DR.scenes[i].tpl === id ? '' : id; break; }
+  }
+  dramaRenderScenes();
+}
+
+function dramaUpdateCost() {
+  var dur = parseInt(document.getElementById('dramaDuration').value) || 5;
+  var m = document.getElementById('dramaModel').value;
+  var price = m === 'fast' ? 0.7 : 0.9;
+  var total = (dur * price * DR.scenes.length).toFixed(1);
+  document.getElementById('dramaCost').textContent = '¥' + total;
+}
+
+// ===== Render Functions =====
+function dramaRenderScenes() {
+  var container = document.getElementById('dramaSceneList');
+  if (!container) return;
+  if (DR.scenes.length === 0) { DR.scenes.push({ id: dramaGenId('s'), desc: '', chars: [], tpl: '' }); }
+  var html = '';
+  for (var i = 0; i < DR.scenes.length; i++) {
+    var s = DR.scenes[i];
+    var charsHtml = '';
+    for (var j = 0; j < DR.chars.length; j++) {
+      var c = DR.chars[j];
+      var checked = s.chars.indexOf(c.id) >= 0 ? 'checked' : '';
+      charsHtml += '<label class="char-check"><input type="checkbox" ' + checked + ' onchange="dramaToggleChar(\'' + s.id + '\',\'' + c.id + '\',this.checked)"> ' + c.avatar + ' ' + c.name + '</label>';
+    }
+    var tplOpts = '<option value="">无模板</option>';
+    for (var k = 0; k < DR.tpls.length; k++) {
+      var sel = DR.tpls[k].id === s.tpl ? 'selected' : '';
+      tplOpts += '<option value="' + DR.tpls[k].id + '" ' + sel + '>' + DR.tpls[k].icon + ' ' + DR.tpls[k].name + '</option>';
+    }
+    html += '<div class="drama-scene-card">'
+      + '<div class="drama-scene-header">'
+      + '<span class="num">场景 ' + (i + 1) + '</span>'
+      + '<div class="drama-scene-actions">'
+      + '<button onclick="dramaMoveScene(\'' + s.id + '\',-1)" ' + (i === 0 ? 'disabled style="opacity:0.3"' : '') + ' title="上移">↑</button>'
+      + '<button onclick="dramaMoveScene(\'' + s.id + '\',1)" ' + (i === DR.scenes.length - 1 ? 'disabled style="opacity:0.3"' : '') + ' title="下移">↓</button>'
+      + '<button class="del" onclick="dramaRemoveScene(\'' + s.id + '\')" title="删除">✕</button>'
+      + '</div></div>'
+      + '<div class="drama-scene-body"><textarea placeholder="描述这个场景的内容、对话和动作..." oninput="dramaUpdateScene(\'' + s.id + '\',\'desc\',this.value)">' + dramaEscHtml(s.desc) + '</textarea></div>'
+      + '<div class="drama-scene-footer">' + charsHtml
+      + '<select class="tpl-select" onchange="dramaUpdateScene(\'' + s.id + '\',\'tpl\',this.value)">' + tplOpts + '</select>'
+      + '</div></div>';
+  }
+  container.innerHTML = html;
+  dramaUpdateCost();
+}
+
+function dramaToggleChar(sceneId, charId, checked) {
+  for (var i = 0; i < DR.scenes.length; i++) {
+    if (DR.scenes[i].id === sceneId) {
+      if (checked) {
+        if (DR.scenes[i].chars.indexOf(charId) < 0) DR.scenes[i].chars.push(charId);
+      } else {
+        DR.scenes[i].chars = DR.scenes[i].chars.filter(function(c) { return c !== charId; });
+      }
+      break;
+    }
+  }
+}
+
+function dramaRenderChars() {
+  var container = document.getElementById('charGrid');
+  if (!container) return;
+  var html = '';
+  for (var i = 0; i < DR.chars.length; i++) {
+    var c = DR.chars[i];
+    html += '<div class="drama-char-card">'
+      + '<span class="avatar">' + c.avatar + '</span>'
+      + '<div class="name">' + dramaEscHtml(c.name) + '</div>'
+      + '<div class="desc">' + dramaEscHtml(c.desc) + '</div>'
+      + '<button class="del-char" onclick="dramaDelChar(\'' + c.id + '\')">✕</button>'
+      + '</div>';
+  }
+  container.innerHTML = html;
+}
+
+function dramaRenderTpls() {
+  var container = document.getElementById('tplPills');
+  if (!container) return;
+  var html = '';
+  for (var i = 0; i < DR.tpls.length; i++) {
+    var t = DR.tpls[i];
+    // apply to last scene for convenience
+    var active = DR.scenes.length > 0 && DR.scenes[DR.scenes.length - 1].tpl === t.id ? ' active' : '';
+    html += '<button class="tpl-pill' + active + '" onclick="dramaApplyTpl(\'' + t.id + '\')">' + t.icon + ' ' + t.name + '</button>';
+  }
+  container.innerHTML = html;
+}
+
+function dramaApplyTpl(tplId) {
+  if (DR.scenes.length === 0) return;
+  var last = DR.scenes[DR.scenes.length - 1];
+  var tpl = null;
+  for (var i = 0; i < DR.tpls.length; i++) { if (DR.tpls[i].id === tplId) { tpl = DR.tpls[i]; break; } }
+  if (!tpl) return;
+  DR.scenes.push({ id: dramaGenId('s'), desc: tpl.name + '，详细描述这个场景...', chars: [], tpl: tplId });
+  dramaRenderScenes();
+}
+
+function dramaRenderResults() {
+  var container = document.getElementById('dramaResults');
+  if (!container) return;
+  document.getElementById('resultCount').textContent = '(' + DR.results.length + ')';
+  if (DR.results.length === 0) {
+    container.innerHTML = '<div class="drama-results-empty">批量生成后，视频会出现在这里</div>';
+    return;
+  }
+  var html = '<div class="drama-results-grid">';
+  for (var i = 0; i < DR.results.length; i++) {
+    var r = DR.results[i];
+    var label = '场景' + (i + 1);
+    if (r.label) label = r.label;
+    html += '<div class="drama-result-item">'
+      + '<video src="' + r.url + '" controls playsinline></video>'
+      + '<span class="ri-label">' + label + '</span>'
+      + '<div class="ri-actions">'
+      + '<button onclick="dramaDlResult(' + i + ')">下载</button>'
+      + '<button onclick="dramaReGen(' + i + ')">重试</button>'
+      + '</div></div>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function dramaEscHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function dramaDlResult(idx) {
+  var r = DR.results[idx];
+  if (!r || !r.url) return;
+  var a = document.createElement('a');
+  a.href = r.url; a.download = 'scene_' + (idx + 1) + '.mp4';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function dramaReGen(idx) {
+  if (DR.generating) return;
+  var r = DR.results[idx];
+  if (!r) return;
+  // Remove this result
+  DR.results.splice(idx, 1);
+  dramaRenderResults();
+  // Find the scene and re-add
+  var scene = null;
+  for (var i = 0; i < DR.scenes.length; i++) { if (DR.scenes[i].id === r.sceneId) { scene = DR.scenes[i]; break; } }
+  if (scene) {
+    // Re-run generation for just this scene
+    DR.generating = true;
+    document.getElementById('dramaBatchBtn').disabled = true;
+    document.getElementById('dramaBatchBtn').textContent = '重新生成...';
+    setTimeout(function() {
+      var url = 'https://via.placeholder.com/480x270.png/667eea/ffffff?text=' + encodeURIComponent(scene.desc.slice(0,30) || '场景' + (idx + 1));
+      DR.results.splice(idx, 0, { sceneId: scene.id, url: url, label: '场景' + (idx + 1) });
+      DR.generating = false;
+      document.getElementById('dramaBatchBtn').disabled = false;
+      document.getElementById('dramaBatchBtn').textContent = '⚡ 批量生成全部场景';
+      dramaRenderResults();
+      toast('场景已重新生成', 'success');
+    }, 1500);
+  }
+}
+
+function dramaBatchGen() {
+  if (DR.generating) return;
+  // Validate
+  var emptyScenes = [];
+  for (var i = 0; i < DR.scenes.length; i++) {
+    if (!DR.scenes[i].desc.trim()) emptyScenes.push(i + 1);
+  }
+  if (emptyScenes.length > 0) {
+    toast('请为场景 ' + emptyScenes.join(', ') + ' 填写描述', 'error');
+    return;
+  }
+
+  DR.generating = true;
+  DR.results = [];
+  dramaRenderResults();
+  var btn = document.getElementById('dramaBatchBtn');
+  btn.disabled = true;
+  btn.textContent = '生成中 0/' + DR.scenes.length;
+  document.getElementById('dramaProgress').style.display = 'block';
+  dramaUpdateProg(0, '正在提交任务...');
+
+  var idx = 0;
+  function genNext() {
+    if (idx >= DR.scenes.length) {
+      DR.generating = false;
+      btn.disabled = false;
+      btn.textContent = '⚡ 批量生成全部场景';
+      document.getElementById('dramaProgText').textContent = '全部完成！';
+      dramaRenderResults();
+      toast('全部 ' + DR.scenes.length + ' 个场景生成完成', 'success');
+      return;
+    }
+    var scene = DR.scenes[idx];
+    btn.textContent = '生成中 ' + (idx + 1) + '/' + DR.scenes.length;
+    dramaUpdateProg(idx + 1, '正在生成场景 ' + (idx + 1) + '...');
+
+    // Simulated API call (replace with real Atlas Cloud API integration later)
+    setTimeout(function() {
+      var url = 'https://via.placeholder.com/480x270.png/' + (idx % 2 === 0 ? '667eea' : '764ba2') + '/ffffff?text=' + encodeURIComponent(scene.desc.slice(0,30) || '场景' + (idx + 1));
+      DR.results.push({ sceneId: scene.id, url: url, label: '场景' + (idx + 1) });
+      idx++;
+      genNext();
+    }, 1500 + Math.random() * 1500);
+  }
+  genNext();
+}
+
+function dramaUpdateProg(current, text) {
+  var total = DR.scenes.length;
+  document.getElementById('dramaProgText').textContent = text || '生成中...';
+  document.getElementById('dramaProgCount').textContent = current + '/' + total;
+  var pct = total > 0 ? (current / total * 100) : 0;
+  document.getElementById('dramaProgBar').style.width = pct + '%';
+}
+
+// Patch init to also init drama
+var _origInit = init;
+init = function() {
+  _origInit();
+  dramaInit();
+  dramaRenderAll();
+};
 </script>
 </body>
 </html>

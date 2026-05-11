@@ -1,0 +1,382 @@
+import React, { useState, useCallback } from 'react';
+import { v4 as uuidv4 } from 'uuid'; // 需要安装: npm install uuid
+
+// ==================== 工具函数 ====================
+const estimateCost = (duration, model) => {
+  const rate = model === 'fast' ? 0.101 : 0.127;
+  return (rate * duration).toFixed(2);
+};
+
+// ==================== 预设数据 ====================
+const INIT_CHARACTERS = [
+  { id: 'char1', name: '男主·林默', avatar: '🧑🏻', desc: '青年，黑色风衣' },
+  { id: 'char2', name: '女主·苏晚', avatar: '👩🏻', desc: '长发，红色围巾' },
+  { id: 'char3', name: '摊主·老陈', avatar: '👨🏻‍🦳', desc: '戴眼镜，围裙' },
+];
+
+const INIT_TEMPLATES = [
+  { id: 'tpl1', name: '赛博朋克早餐摊', icon: '🍜' },
+  { id: 'tpl2', name: '霓虹街道', icon: '🌃' },
+  { id: 'tpl3', name: '公寓室内', icon: '🏠' },
+  { id: 'tpl4', name: '天桥夜景', icon: '🌉' },
+];
+
+// ==================== 子组件 ====================
+const CharacterCard = ({ character, selected, onClick, onDelete }) => (
+  <div
+    onClick={() => onClick(character.id)}
+    className={`relative flex flex-col items-center p-2 rounded-lg cursor-pointer border-2 transition-all ${
+      selected
+        ? 'border-purple-500 bg-purple-50 shadow-md'
+        : 'border-gray-200 hover:border-gray-300 bg-white'
+    }`}
+  >
+    <span className="text-2xl">{character.avatar}</span>
+    <span className="text-xs font-medium mt-1">{character.name}</span>
+    <span className="text-[10px] text-gray-400">{character.desc}</span>
+    {onDelete && (
+      <button
+        onClick={(e) => { e.stopPropagation(); onDelete(character.id); }}
+        className="absolute -top-1 -right-1 w-4 h-4 bg-red-400 text-white rounded-full text-[10px] flex items-center justify-center hover:bg-red-600"
+      >
+        ×
+      </button>
+    )}
+  </div>
+);
+
+const TemplateCard = ({ template, selected, onClick }) => (
+  <div
+    onClick={() => onClick(template.id)}
+    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs cursor-pointer border transition-all ${
+      selected
+        ? 'bg-purple-100 border-purple-400 text-purple-700'
+        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+    }`}
+  >
+    <span>{template.icon}</span> {template.name}
+  </div>
+);
+
+const SceneItem = ({ scene, index, onUpdate, onRemove, onMoveUp, onMoveDown, total }) => (
+  <div className="p-3 mb-2 bg-white rounded-lg border border-gray-200 shadow-sm">
+    <div className="flex items-center justify-between mb-1">
+      <span className="text-xs font-semibold text-gray-500">场景 {index + 1}</span>
+      <div className="flex gap-1">
+        <button onClick={() => onMoveUp(index)} disabled={index === 0} className="text-gray-400 disabled:opacity-30 text-xs">↑</button>
+        <button onClick={() => onMoveDown(index)} disabled={index === total - 1} className="text-gray-400 disabled:opacity-30 text-xs">↓</button>
+        <button onClick={() => onRemove(index)} className="text-red-400 text-xs hover:text-red-600">🗑</button>
+      </div>
+    </div>
+    <textarea
+      className="w-full border border-gray-200 rounded-md p-2 text-sm resize-none outline-none focus:border-purple-300"
+      rows="2"
+      placeholder="描述这个场景的内容、对话和动作..."
+      value={scene.description}
+      onChange={(e) => onUpdate(index, 'description', e.target.value)}
+    />
+    <div className="flex gap-2 mt-1.5 flex-wrap">
+      {['char1', 'char2', 'char3'].map((charKey) => (
+        <label key={charKey} className="flex items-center gap-1 text-xs">
+          <input
+            type="checkbox"
+            checked={scene.characters.includes(charKey)}
+            onChange={(e) => {
+              const newChars = e.target.checked
+                ? [...scene.characters, charKey]
+                : scene.characters.filter((c) => c !== charKey);
+              onUpdate(index, 'characters', newChars);
+            }}
+            className="w-3 h-3"
+          />
+          {INIT_CHARACTERS.find((c) => c.id === charKey)?.avatar}
+        </label>
+      ))}
+      <select
+        value={scene.template}
+        onChange={(e) => onUpdate(index, 'template', e.target.value)}
+        className="text-xs border border-gray-200 rounded px-1 py-0.5 ml-auto"
+      >
+        <option value="">无模板</option>
+        {INIT_TEMPLATES.map((t) => (
+          <option key={t.id} value={t.id}>{t.icon} {t.name}</option>
+        ))}
+      </select>
+    </div>
+  </div>
+);
+
+// ==================== 主组件 ====================
+const AIShortDramaWorkbench = () => {
+  const [projectName, setProjectName] = useState('');
+  const [scenes, setScenes] = useState([
+    { id: uuidv4(), description: '', characters: [], template: '' }
+  ]);
+  const [model, setModel] = useState('fast'); // fast 或 pro
+  const [resolution, setResolution] = useState('1080p');
+  const [aspectRatio, setAspectRatio] = useState('16:9');
+  const [duration, setDuration] = useState(4);
+  const [audio, setAudio] = useState(true);
+  const [aiMark, setAiMark] = useState(true);
+  const [motionScale, setMotionScale] = useState('medium');
+  const [seed, setSeed] = useState('');
+  const [negativePrompt, setNegativePrompt] = useState('');
+
+  // 生成进度
+  const [generating, setGenerating] = useState(false);
+  const [progress, setProgress] = useState(0); // 0 到 total
+  const [results, setResults] = useState([]); // [{ sceneId, url }]
+
+  // 新增/删除场景
+  const addScene = () => {
+    setScenes([...scenes, { id: uuidv4(), description: '', characters: [], template: '' }]);
+  };
+  const removeScene = (index) => {
+    if (scenes.length === 1) return;
+    setScenes(scenes.filter((_, i) => i !== index));
+  };
+  const updateScene = (index, field, value) => {
+    const updated = [...scenes];
+    updated[index] = { ...updated[index], [field]: value };
+    setScenes(updated);
+  };
+  const moveScene = (index, direction) => {
+    const newScenes = [...scenes];
+    const target = index + direction;
+    if (target < 0 || target >= newScenes.length) return;
+    [newScenes[index], newScenes[target]] = [newScenes[target], newScenes[index]];
+    setScenes(newScenes);
+  };
+
+  // 模拟批量生成
+  const handleBatchGenerate = useCallback(async () => {
+    if (scenes.some((s) => !s.description.trim())) {
+      alert('请为每个场景填写描述');
+      return;
+    }
+    setGenerating(true);
+    setResults([]);
+    setProgress(0);
+
+    for (let i = 0; i < scenes.length; i++) {
+      // 模拟 API 调用延迟（实际会更快）
+      await new Promise((resolve) => setTimeout(resolve, 2000 + Math.random() * 2000));
+      setProgress(i + 1);
+      // 模拟生成的视频 URL（用占位图）
+      setResults((prev) => [
+        ...prev,
+        {
+          sceneId: scenes[i].id,
+          url: `https://via.placeholder.com/240x135.png?text=场景${i + 1}`,
+        },
+      ]);
+    }
+    setGenerating(false);
+  }, [scenes]);
+
+  const costPerScene = estimateCost(duration, model);
+  const totalCost = (Number(costPerScene) * scenes.length).toFixed(2);
+
+  return (
+    <div className="max-w-7xl mx-auto p-4 md:p-6 bg-gray-50 min-h-screen font-sans">
+      {/* 头部 */}
+      <header className="mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+          Seedance Studio · AI短剧工作台
+        </h1>
+        <p className="text-sm text-gray-500 mt-1">
+          基于 Seedance 2.0 · 无需排队 · 分钟级出片 · <span className="text-gray-400">已帮助创作者完成 10,000+ 集短剧</span>
+        </p>
+      </header>
+
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* ========== 左侧：剧本与生成控制 ========== */}
+        <div className="lg:w-3/5 space-y-4">
+          {/* 项目名称 & 高级设置 */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex flex-wrap items-center gap-3 mb-3">
+              <input
+                className="flex-1 min-w-[200px] border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-300"
+                placeholder="项目名称，如：赛博朋克爱情短剧"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+              />
+              <button
+                onClick={handleBatchGenerate}
+                disabled={generating}
+                className="px-5 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg disabled:opacity-50 transition-all"
+              >
+                {generating ? `生成中 ${progress}/${scenes.length}` : '⚡ 批量生成全部场景'}
+              </button>
+            </div>
+
+            {/* 生成参数快速设置 */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <div>
+                <label className="block text-gray-500 mb-0.5">模型</label>
+                <select value={model} onChange={(e) => setModel(e.target.value)} className="w-full border border-gray-200 rounded px-2 py-1">
+                  <option value="fast">速度优先 $0.101/s</option>
+                  <option value="pro">质量优先 $0.127/s</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-gray-500 mb-0.5">分辨率</label>
+                <select value={resolution} onChange={(e) => setResolution(e.target.value)} className="w-full border border-gray-200 rounded px-2 py-1">
+                  <option value="720p">720p</option>
+                  <option value="1080p">1080p</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-gray-500 mb-0.5">比例</label>
+                <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} className="w-full border border-gray-200 rounded px-2 py-1">
+                  <option value="16:9">16:9 横屏</option>
+                  <option value="9:16">9:16 竖屏</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-gray-500 mb-0.5">时长(秒)</label>
+                <select value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="w-full border border-gray-200 rounded px-2 py-1">
+                  {[4,5,6,8,10,12,15].map(t => <option key={t} value={t}>{t}秒</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input type="checkbox" checked={audio} onChange={(e) => setAudio(e.target.checked)} className="w-3.5 h-3.5" />
+                🎵 自动环境音效
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer">
+                <input type="checkbox" checked={aiMark} onChange={(e) => setAiMark(e.target.checked)} className="w-3.5 h-3.5" />
+                🏷️ AI生成标识（合规要求）
+              </label>
+              <span className="ml-auto text-gray-500">
+                预估：<span className="font-semibold text-purple-600">¥{costPerScene}/场景</span>，共 ¥{totalCost}
+              </span>
+            </div>
+          </div>
+
+          {/* 场景列表 */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-gray-700">📖 剧本场景 ({scenes.length})</h2>
+              <button onClick={addScene} className="text-sm text-purple-600 hover:underline">+ 添加场景</button>
+            </div>
+            <div className="max-h-[500px] overflow-y-auto space-y-2 pr-1">
+              {scenes.map((scene, idx) => (
+                <SceneItem
+                  key={scene.id}
+                  scene={scene}
+                  index={idx}
+                  total={scenes.length}
+                  onUpdate={updateScene}
+                  onRemove={removeScene}
+                  onMoveUp={(i) => moveScene(i, -1)}
+                  onMoveDown={(i) => moveScene(i, 1)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* 进度条 */}
+          {generating && (
+            <div className="bg-white p-4 rounded-xl shadow-sm border">
+              <div className="flex justify-between text-sm mb-1">
+                <span>项目进度</span>
+                <span>{progress}/{scenes.length} 场景</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${(progress / scenes.length) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ========== 右侧：角色库、模板与结果 ========== */}
+        <div className="lg:w-2/5 space-y-4">
+          {/* 角色库 */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-gray-700">🎭 角色库</h3>
+              <button className="text-xs text-purple-600 hover:underline">+ 新建</button>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {INIT_CHARACTERS.map((ch) => (
+                <CharacterCard
+                  key={ch.id}
+                  character={ch}
+                  selected={false}
+                  onClick={() => {}} // 可以扩展编辑功能
+                  onDelete={() => {}}  // 可删除
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* 场景模板库 */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border">
+            <h3 className="font-semibold text-gray-700 mb-2">🖼️ 场景模板</h3>
+            <div className="flex gap-2 flex-wrap">
+              {INIT_TEMPLATES.map((tpl) => (
+                <TemplateCard
+                  key={tpl.id}
+                  template={tpl}
+                  selected={false}
+                  onClick={() => {}} // 可扩展快速应用
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* 已生成片段 */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border">
+            <h3 className="font-semibold text-gray-700 mb-2">📋 已生成片段 ({results.length})</h3>
+            {results.length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-6">批量生成后，视频会出现在这里</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                {results.map((item, idx) => (
+                  <div key={idx} className="relative group rounded overflow-hidden border border-gray-150">
+                    <img src={item.url} alt={`场景${idx+1}`} className="w-full h-auto" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <span className="text-white text-xs bg-black/60 px-2 py-1 rounded">预览</span>
+                    </div>
+                    <span className="absolute top-1 left-1 bg-white/80 text-[10px] px-1 rounded">场景{idx+1}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 高级参数面板 (可折叠) */}
+          <details className="bg-white p-4 rounded-xl shadow-sm border text-sm">
+            <summary className="font-semibold text-gray-700 cursor-pointer">⚙️ 高级参数</summary>
+            <div className="mt-3 space-y-2">
+              <div>
+                <label className="text-xs text-gray-500">运动幅度</label>
+                <select value={motionScale} onChange={(e) => setMotionScale(e.target.value)} className="w-full border border-gray-200 rounded px-2 py-1 text-xs">
+                  <option value="low">低 (静态)</option>
+                  <option value="medium">中等</option>
+                  <option value="high">高 (剧烈)</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">随机种子 (可选)</label>
+                <input value={seed} onChange={(e) => setSeed(e.target.value)} className="w-full border border-gray-200 rounded px-2 py-1 text-xs" placeholder="留空随机" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">负向提示词</label>
+                <input value={negativePrompt} onChange={(e) => setNegativePrompt(e.target.value)} className="w-full border border-gray-200 rounded px-2 py-1 text-xs" placeholder="排除的元素，如暴力、模糊" />
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AIShortDramaWorkbench;
