@@ -1,0 +1,15 @@
+{
+  "name": "seedance-auth-server",
+  "version": "1.0.0",
+  "description": "Seedance Studio 用户认证与积分后端服务",
+  "main": "auth-server.js",
+  "scripts": {
+    "start": "node auth-server.js",
+    "dev": "node --watch auth-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3"
+  }
+}

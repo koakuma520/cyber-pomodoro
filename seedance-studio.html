@@ -9,29 +9,29 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg-primary: #f5f6fa;
-    --bg-secondary: #ffffff;
-    --bg-card: rgba(255,255,255,0.82);
-    --bg-card-hover: rgba(255,255,255,0.96);
-    --border: rgba(0,0,0,0.06);
-    --border-hover: rgba(102,126,234,0.25);
-    --text-primary: #1a1a2e;
-    --text-secondary: #7a7a9a;
-    --accent: #667eea;
-    --accent-hover: #5a6fd6;
-    --accent-gradient: linear-gradient(135deg, #667eea, #764ba2);
-    --accent-glow: rgba(102,126,234,0.25);
-    --success: #00d2a0;
-    --warning: #f59e0b;
-    --error: #ef4444;
-    --radius: 16px;
-    --radius-sm: 10px;
-    --radius-xs: 6px;
-    --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
-    --shadow-hover: 0 4px 24px rgba(0,0,0,0.08);
-    --toast-bg: rgba(30,30,50,0.92);
+    --bg-primary: #0a0c14;
+    --bg-secondary: #131622;
+    --bg-card: rgba(18,22,35,0.8);
+    --bg-card-hover: rgba(24,28,45,0.92);
+    --border: rgba(72,85,120,0.35);
+    --border-hover: rgba(139,92,246,0.45);
+    --text-primary: #eef2ff;
+    --text-secondary: #8b90b5;
+    --accent: #818cf8;
+    --accent-hover: #6366f1;
+    --accent-gradient: linear-gradient(105deg, #6366f1 0%, #8b5cf6 100%);
+    --accent-glow: rgba(99,102,241,0.35);
+    --success: #34d399;
+    --warning: #fbbf24;
+    --error: #f87171;
+    --radius: 24px;
+    --radius-sm: 16px;
+    --radius-xs: 10px;
+    --shadow: 0 2px 8px rgba(0,0,0,0.25), 0 8px 24px rgba(0,0,0,0.2);
+    --shadow-hover: 0 4px 16px rgba(0,0,0,0.3), 0 12px 32px rgba(139,92,246,0.12);
+    --toast-bg: rgba(15,17,26,0.96);
     --font: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
-    --header-height: 60px;
+    --header-height: 64px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -44,17 +44,17 @@
   }
 
   /* Scrollbar */
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #b0b0b0; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #1e1f2e; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb { background: #3b3f5c; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: #4e5280; }
 
   /* Header */
   .header {
     height: var(--header-height);
-    background: rgba(255,255,255,0.72);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: rgba(13,15,25,0.78);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
@@ -84,12 +84,14 @@
   }
   .header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
   .provider-badge {
-    font-size: 11px; padding: 3px 10px; border-radius: 20px;
-    background: rgba(102,126,234,0.08); color: var(--accent);
-    border: 1px solid rgba(102,126,234,0.18);
+    font-size: 11px; padding: 4px 12px; border-radius: 20px;
+    background: rgba(99,102,241,0.12); color: #a5b4fc;
+    border: 1px solid rgba(99,102,241,0.22);
     font-weight: 500;
   }
   .header-status { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-secondary); }
+  .credit-balance { display:flex; align-items:center; gap:6px; background:rgba(18,22,35,0.6); border:1px solid #1f2240; border-radius:20px; padding:5px 14px; }
+  .credit-icon { font-size:15px; }
   .status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
   .status-dot.online { background: var(--success); box-shadow: 0 0 6px rgba(0,210,160,0.4); }
   .status-dot.offline { background: #d0d0d0; }
@@ -103,19 +105,19 @@
   /* Cards */
   .card {
     background: var(--bg-card);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 20px 22px;
     margin-bottom: 16px;
     box-shadow: var(--shadow);
-    transition: box-shadow 0.2s, border-color 0.2s;
+    transition: box-shadow 0.25s, border-color 0.25s, background 0.25s;
   }
-  .card:hover { box-shadow: var(--shadow-hover); }
+  .card:hover { box-shadow: var(--shadow-hover); border-color: rgba(139,92,246,0.25); }
   .card-title {
-    font-size: 12px; font-weight: 600; text-transform: uppercase;
-    letter-spacing: 0.6px; color: var(--text-secondary);
+    font-size: 13px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.8px; color: var(--text-secondary);
     margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
   }
   .card-plain { background: transparent; backdrop-filter: none; box-shadow: none; border: none; padding: 0; }
@@ -135,8 +137,8 @@
   .api-status.not-configured { color: var(--text-secondary); }
 
   .error-detail-box {
-    background: rgba(239,68,68,0.06);
-    border: 1px solid rgba(239,68,68,0.15);
+    background: rgba(248,113,113,0.08);
+    border: 1px solid rgba(248,113,113,0.2);
     border-radius: var(--radius-sm);
     padding: 10px 14px;
     margin-top: 8px;
@@ -150,11 +152,11 @@
 
   /* Forms */
   input, textarea, select {
-    background: var(--bg-secondary);
-    border: 1.5px solid var(--border);
+    background: #121420;
+    border: 1.5px solid #2c2f45;
     border-radius: var(--radius-sm);
     color: var(--text-primary);
-    padding: 9px 13px;
+    padding: 10px 14px;
     font-size: 14px;
     font-family: var(--font);
     outline: none;
@@ -162,22 +164,23 @@
     width: 100%;
   }
   input:focus, textarea:focus, select:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-glow);
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139,92,246,0.2);
   }
+  input::placeholder, textarea::placeholder { color: #5a5f80; }
   textarea { resize: vertical; min-height: 100px; line-height: 1.6; padding-bottom: 24px; }
   select {
     cursor: pointer; appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237a7a9a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b90b5' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
     background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px;
   }
   input[type="file"] { padding: 6px 8px; font-size: 13px; }
   input[type="file"]::file-selector-button {
-    background: var(--bg-primary); border: 1px solid var(--border);
-    border-radius: var(--radius-xs); color: var(--text-primary); padding: 4px 10px;
+    background: #1a1d30; border: 1px solid #2c2f45;
+    border-radius: var(--radius-xs); color: #d1d5ff; padding: 4px 10px;
     cursor: pointer; margin-right: 8px; font-size: 12px; font-family: var(--font);
   }
-  input[type="file"]::file-selector-button:hover { background: var(--bg-card-hover); }
+  input[type="file"]::file-selector-button:hover { background: #252a40; }
 
   /* Textarea char count overlay */
   .textarea-wrap { position: relative; }
@@ -185,7 +188,7 @@
     position: absolute; right: 10px; bottom: 8px;
     font-size: 11px; color: var(--text-secondary);
     pointer-events: none;
-    background: rgba(255,255,255,0.7);
+    background: rgba(18,20,32,0.7);
     padding: 0 4px;
     border-radius: 3px;
   }
@@ -193,7 +196,7 @@
     position: absolute; right: 10px; bottom: 26px;
     font-size: 10px; color: var(--text-secondary);
     pointer-events: none; opacity: 0.5;
-    background: rgba(255,255,255,0.5);
+    background: rgba(18,20,32,0.5);
     padding: 0 4px;
     border-radius: 2px;
   }
@@ -214,17 +217,17 @@
   }
   .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px var(--accent-glow); }
   .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
-  .btn-secondary { background: var(--bg-secondary); color: var(--text-primary); border: 1.5px solid var(--border); }
-  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-secondary { background: #1f2137; color: #d1d5ff; border: 1.5px solid #3a3f60; }
+  .btn-secondary:hover { background: #2a2e4a; border-color: #8b5cf6; color: #e0e4ff; }
   .btn-small { padding: 7px 14px; font-size: 12px; }
   .btn-xs {
     padding: 3px 8px; font-size: 11px; border-radius: var(--radius-xs);
-    background: var(--bg-secondary); border: 1.5px solid var(--border);
+    background: #1a1d30; border: 1.5px solid #2c2f45;
     color: var(--text-secondary); cursor: pointer; transition: all 0.2s; font-family: var(--font);
   }
-  .btn-xs:hover { border-color: var(--accent); color: var(--accent); }
-  .btn-link { background: transparent; color: var(--accent); padding: 5px 12px; font-size: 12px; font-weight: 500; }
-  .btn-link:hover { background: rgba(102,126,234,0.06); border-radius: var(--radius-xs); }
+  .btn-xs:hover { border-color: #8b5cf6; color: #a5b4fc; }
+  .btn-link { background: transparent; color: #a5b4fc; padding: 5px 12px; font-size: 12px; font-weight: 500; }
+  .btn-link:hover { background: rgba(139,92,246,0.12); border-radius: var(--radius-xs); }
 
   /* Gen button states */
   .btn-gen {
@@ -270,12 +273,12 @@
   }
   .btn-gen.btn-done:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,210,160,0.4); }
   .btn-gen.btn-nokey {
-    background: #e0e0e0;
-    color: #999;
+    background: #1a1d30;
+    color: #5a5f80;
     cursor: pointer;
     box-shadow: none;
   }
-  .btn-gen.btn-nokey:hover { background: #d5d5d5; }
+  .btn-gen.btn-nokey:hover { background: #242840; }
 
   /* Form grid */
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -287,16 +290,16 @@
   .toggle { position: relative; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--text-secondary); }
   .toggle input { display: none; }
   .toggle-slider {
-    width: 34px; height: 18px; background: #e5e5ea;
+    width: 34px; height: 18px; background: #2c2f45;
     border-radius: 9px;
     position: relative; transition: all 0.25s; flex-shrink: 0;
   }
   .toggle-slider::after {
-    content: ''; width: 14px; height: 14px; background: white;
+    content: ''; width: 14px; height: 14px; background: #8b90b5;
     border-radius: 50%; position: absolute; top: 2px; left: 2px;
-    transition: all 0.25s; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: all 0.25s; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
   }
-  .toggle input:checked + .toggle-slider { background: var(--accent); }
+  .toggle input:checked + .toggle-slider { background: #8b5cf6; }
   .toggle input:checked + .toggle-slider::after { left: 18px; background: white; }
 
   /* Tooltip */
@@ -304,7 +307,7 @@
   .tip-icon {
     display: inline-flex; align-items: center; justify-content: center;
     width: 15px; height: 15px; border-radius: 50%;
-    background: rgba(122,122,154,0.12); color: var(--text-secondary);
+    background: rgba(139,144,181,0.15); color: var(--text-secondary);
     font-size: 9px; cursor: help; font-style: italic; font-weight: 600;
   }
   .tip-text {
@@ -344,30 +347,31 @@
   }
   .image-cards { display: flex; gap: 10px; flex-wrap: wrap; }
   .image-dropzone {
-    border: 2px dashed var(--border); border-radius: var(--radius-sm);
+    border: 2px dashed #2c2f45; border-radius: var(--radius-sm);
     padding: 12px; text-align: center; cursor: pointer;
     transition: all 0.2s; min-height: 64px;
     display: flex; flex-direction: column; align-items: center;
     justify-content: center; gap: 3px; color: var(--text-secondary); font-size: 13px;
+    background: rgba(18,20,32,0.5);
   }
-  .image-dropzone:hover { border-color: var(--accent); background: rgba(102,126,234,0.04); }
+  .image-dropzone:hover { border-color: #8b5cf6; background: rgba(139,92,246,0.06); }
   .image-dropzone .icon { font-size: 20px; }
 
   /* Suggestions */
   .suggestions { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 2px; }
   .suggestion-chip {
-    padding: 4px 10px; border-radius: 14px; border: 1.5px solid var(--border);
-    background: var(--bg-secondary); color: var(--text-secondary);
+    padding: 4px 10px; border-radius: 14px; border: 1.5px solid #2c2f45;
+    background: #121420; color: var(--text-secondary);
     font-size: 12px; cursor: pointer; transition: all 0.2s;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;
   }
-  .suggestion-chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(102,126,234,0.04); }
+  .suggestion-chip:hover { border-color: #8b5cf6; color: #a5b4fc; background: rgba(139,92,246,0.08); }
 
   /* Progress */
   .progress-section { display: none; }
   .progress-section.active { display: block; }
   .task-id { font-size: 11px; color: var(--text-secondary); font-family: 'SF Mono', 'Fira Code', monospace; word-break: break-all; margin-bottom: 8px; }
-  .progress-bar-container { height: 6px; background: #e8e8ee; border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+  .progress-bar-container { height: 6px; background: #1e1f2e; border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
   .progress-bar { height: 100%; background: var(--accent-gradient); border-radius: 3px; transition: width 0.5s ease; width: 0%; }
   .progress-info { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary); }
   .progress-status { display: inline-flex; align-items: center; gap: 6px; }
@@ -419,7 +423,7 @@
   .drama-scene-list { display:flex; flex-direction:column; gap:8px; margin-bottom:10px; max-height:420px; overflow-y:auto; }
   .drama-scene-card { border:1.5px solid var(--border); border-radius:var(--radius-sm); background:var(--bg-secondary); overflow:hidden; transition:border-color 0.2s; }
   .drama-scene-card:hover { border-color:var(--accent); }
-  .drama-scene-header { display:flex; align-items:center; justify-content:space-between; padding:6px 10px; background:var(--bg-primary); border-bottom:1px solid var(--border); }
+  .drama-scene-header { display:flex; align-items:center; justify-content:space-between; padding:6px 10px; background:#0c0e18; border-bottom:1px solid #1f2240; }
   .drama-scene-header .num { font-size:11px; font-weight:600; color:var(--text-secondary); }
   .drama-scene-actions { display:flex; gap:2px; }
   .drama-scene-actions button { background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:14px; padding:2px 4px; border-radius:3px; transition:all 0.15s; line-height:1; }
@@ -434,7 +438,7 @@
   .drama-scene-footer .tpl-select { margin-left:auto; border:1.5px solid var(--border); border-radius:var(--radius-xs); padding:3px 8px; font-size:11px; font-family:var(--font); outline:none; background:var(--bg-secondary); color:var(--text-primary); cursor:pointer; }
   .drama-progress { margin:6px 0 10px; }
   .drama-progress-info { display:flex; justify-content:space-between; font-size:12px; color:var(--text-secondary); margin-bottom:4px; }
-  .drama-progress-bar-wrap { height:6px; background:#e8e8ee; border-radius:3px; overflow:hidden; }
+  .drama-progress-bar-wrap { height:6px; background:#1e1f2e; border-radius:3px; overflow:hidden; }
   .drama-progress-bar { height:100%; background:var(--accent-gradient); border-radius:3px; transition:width 0.5s ease; width:0%; }
   .drama-advanced { margin-top:8px; }
   .drama-adv-label { display:block; font-size:11px; color:var(--text-secondary); margin-bottom:2px; }
@@ -474,14 +478,47 @@
 
   .drama-scene-card.dragging { opacity:0.5; border-style:dashed; }
 
+  /* Transaction list */
+  .txn-list { max-height:280px; overflow-y:auto; }
+  .txn-empty { text-align:center; padding:16px; font-size:13px; color:var(--text-secondary); }
+  .txn-item { display:flex; align-items:center; gap:10px; padding:8px 10px; border-bottom:1px solid var(--border); font-size:12px; flex-wrap:wrap; }
+  .txn-item:last-child { border-bottom:none; }
+  .txn-amount { font-weight:600; min-width:55px; }
+  .txn-plus { color:var(--success); }
+  .txn-minus { color:var(--error); }
+  .txn-desc { flex:1; min-width:100px; color:var(--text-primary); }
+  .txn-time { font-size:11px; color:var(--text-secondary); min-width:120px; }
+  .txn-bal { font-size:11px; color:var(--text-secondary); }
+
+  /* Admin panel */
+  .admin-user-row { display:flex; align-items:center; gap:12px; padding:9px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:6px; background:var(--bg-secondary); flex-wrap:wrap; }
+  .admin-user-name { font-weight:600; font-size:13px; color:var(--text-primary); min-width:100px; }
+  .admin-user-bal { font-size:13px; color:var(--text-secondary); }
+  .admin-user-actions { display:flex; gap:4px; margin-left:auto; }
+
+  /* Auth Overlay */
+  .auth-overlay { position:fixed; inset:0; z-index:20000; background:rgba(0,0,0,0.88); backdrop-filter:blur(16px); display:flex; align-items:center; justify-content:center; }
+  .auth-overlay.hidden { display:none; }
+  .auth-card { width:420px; max-width:92%; text-align:center; padding:32px 28px 24px !important; }
+  .auth-logo { font-size:22px; font-weight:700; background:linear-gradient(135deg,#c084fc,#60a5fa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:4px; }
+  .auth-sub { font-size:13px; color:var(--text-secondary); margin-bottom:16px; }
+  .auth-tabs { display:flex; gap:8px; margin-bottom:16px; }
+  .auth-tab { flex:1; padding:8px; border-radius:var(--radius-sm); border:1.5px solid #2c2f45; background:transparent; color:var(--text-secondary); cursor:pointer; font-size:14px; font-family:var(--font); transition:all 0.2s; }
+  .auth-tab.active { border-color:#8b5cf6; background:rgba(139,92,246,0.15); color:#a5b4fc; }
+  .auth-tab:hover { border-color:#8b5cf6; }
+  .auth-input { width:100%; padding:10px 14px; font-size:14px; margin-top:10px; background:#121420; border:1.5px solid #2c2f45; border-radius:var(--radius-sm); color:var(--text-primary); font-family:var(--font); outline:none; transition:border-color 0.2s; }
+  .auth-input:focus { border-color:#8b5cf6; box-shadow:0 0 0 3px rgba(139,92,246,0.2); }
+  .auth-hint { font-size:11px; color:var(--text-secondary); margin-top:12px; }
+
   /* History */
   .history-list { display: flex; flex-direction: column; gap: 6px; }
   .history-item {
-    display: flex; align-items: center; gap: 10px; padding: 8px 12px;
-    background: var(--bg-secondary); border-radius: var(--radius-sm);
-    border: 1.5px solid var(--border); transition: border-color 0.2s;
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+    background: #0f111a; border-radius: var(--radius-sm);
+    border: 1.5px solid #1f2240; transition: border-color 0.2s;
+    border-left: 3px solid #8b5cf6;
   }
-  .history-item:hover { border-color: var(--accent); }
+  .history-item:hover { border-color: #8b5cf6; }
   .h-thumb {
     width: 72px; height: 44px; border-radius: var(--radius-xs); background: #000;
     flex-shrink: 0; overflow: hidden; position: relative;
@@ -498,7 +535,7 @@
   .h-info .h-prompt { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary); }
   .h-info .h-prompt:hover { color: var(--accent); }
   .h-info .h-meta { font-size: 11px; color: var(--text-secondary); display: flex; gap: 5px; flex-wrap: wrap; }
-  .h-info .h-meta span { background: var(--bg-primary); padding: 0 5px; border-radius: 3px; }
+  .h-info .h-meta span { background: #1a1d30; padding: 0 5px; border-radius: 3px; }
   .h-info .h-countdown { font-size: 11px; color: var(--warning); }
   .h-actions { display: flex; gap: 3px; flex-shrink: 0; }
   .h-badge {
@@ -514,7 +551,7 @@
   /* Result overlay */
   .result-overlay {
     display: none; position: fixed; inset: 0; z-index: 10000;
-    background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+    background: rgba(0,0,0,0.75); backdrop-filter: blur(16px);
     align-items: center; justify-content: center;
     padding: 20px;
   }
@@ -572,9 +609,12 @@
   .toast {
     padding: 10px 16px; border-radius: var(--radius-sm); font-size: 13px;
     animation: slideIn 0.3s ease; max-width: 380px;
-    backdrop-filter: blur(12px); line-height: 1.4;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    backdrop-filter: blur(16px); line-height: 1.4;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
   }
+  .toast.error { background: rgba(248,113,113,0.92); color: white; }
+  .toast.success { background: rgba(52,211,153,0.92); color: white; }
+  .toast.info { background: rgba(99,102,241,0.92); color: white; }
   .toast.error { background: rgba(239,68,68,0.9); color: white; }
   .toast.success { background: rgba(0,210,160,0.9); color: white; }
   .toast.info { background: rgba(102,126,234,0.9); color: white; }
@@ -583,18 +623,18 @@
   /* Model/Mode pills */
   .model-pills, .mode-pills { display: flex; gap: 6px; }
   .model-pill, .mode-pill {
-    padding: 7px 14px; border: 1.5px solid var(--border); border-radius: 18px;
+    padding: 8px 16px; border: 1.5px solid #2c2f45; border-radius: 20px;
     cursor: pointer; font-size: 13px; transition: all 0.2s;
-    background: var(--bg-secondary); color: var(--text-secondary); font-family: var(--font);
+    background: #121420; color: var(--text-secondary); font-family: var(--font);
   }
-  .model-pill.active { border-color: var(--accent); background: rgba(102,126,234,0.08); color: var(--accent); }
-  .model-pill:hover { border-color: var(--accent); }
+  .model-pill.active { border-color: #8b5cf6; background: rgba(139,92,246,0.15); color: #a5b4fc; }
+  .model-pill:hover { border-color: #8b5cf6; }
   .model-pill .pill-sub { display: block; font-size: 10px; opacity: 0.6; margin-top: 1px; }
-  .mode-pill.active { border-color: var(--success); background: rgba(0,210,160,0.08); color: var(--success); }
-  .mode-pill:hover { border-color: var(--success); }
+  .mode-pill.active { border-color: #34d399; background: rgba(52,211,153,0.12); color: #34d399; }
+  .mode-pill:hover { border-color: #34d399; }
 
   .cost-display {
-    font-size: 20px; font-weight: 700; color: var(--accent);
+    font-size: 20px; font-weight: 700; color: #c084fc;
     display: flex; align-items: baseline; gap: 4px;
   }
   .cost-display .unit { font-size: 13px; font-weight: 400; color: var(--text-secondary); }
@@ -604,20 +644,20 @@
   .advanced-section { margin-top: 14px; }
   .advanced-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 9px 13px; background: var(--bg-secondary);
-    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    padding: 9px 13px; background: #121420;
+    border: 1.5px solid #2c2f45; border-radius: var(--radius-sm);
     cursor: pointer; transition: border-color 0.2s; user-select: none;
   }
-  .advanced-header:hover { border-color: var(--accent); }
+  .advanced-header:hover { border-color: #8b5cf6; }
   .advanced-panel {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.35s ease, padding 0.35s ease, opacity 0.3s ease;
     opacity: 0;
     padding: 0 13px;
-    border: 1.5px solid var(--border); border-top: none;
+    border: 1.5px solid #2c2f45; border-top: none;
     border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-    background: var(--bg-secondary);
+    background: #121420;
   }
   .advanced-panel.open {
     max-height: 500px;
@@ -647,17 +687,17 @@
   .gallery-card {
     flex: 0 0 180px;
     scroll-snap-align: start;
-    border: 1.5px solid var(--border);
+    border: 1.5px solid #1f2240;
     border-radius: var(--radius-sm);
     overflow: hidden;
     cursor: pointer;
     transition: all 0.2s;
-    background: var(--bg-secondary);
+    background: #0f111a;
   }
   .gallery-card:hover {
-    border-color: var(--accent);
+    border-color: #8b5cf6;
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px var(--accent-glow);
+    box-shadow: 0 4px 20px rgba(139,92,246,0.25);
   }
   .gallery-visual {
     height: 120px;
@@ -674,7 +714,7 @@
   /* Works modal */
   .modal-overlay {
     display: none; position: fixed; inset: 0; z-index: 10000;
-    background: rgba(0,0,0,0.45); backdrop-filter: blur(6px);
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(12px);
     align-items: center; justify-content: center;
   }
   .modal-overlay.open { display: flex; }
@@ -699,10 +739,10 @@
   .modal-search input { font-size: 13px; padding: 8px 12px; }
   .works-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
   .work-card {
-    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-    overflow: hidden; transition: border-color 0.2s;
+    border: 1.5px solid #1f2240; border-radius: var(--radius-sm);
+    overflow: hidden; transition: border-color 0.2s; background: #0f111a;
   }
-  .work-card:hover { border-color: var(--accent); }
+  .work-card:hover { border-color: #8b5cf6; }
   .work-card video { width: 100%; display: block; max-height: 150px; background: #000; border-radius: 0; }
   .work-card .work-info { padding: 8px 10px; }
   .work-card .work-info .w-prompt { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -747,6 +787,24 @@
 </head>
 <body>
 
+<!-- Login Overlay -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card card">
+    <div class="auth-logo">🎬 Seedance Studio</div>
+    <p class="auth-sub">AI视频生成 · 积分系统 1元 = 10积分</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="showLoginTab" onclick="switchAuthTab('login')">登录</button>
+      <button class="auth-tab" id="showRegTab" onclick="switchAuthTab('register')">注册</button>
+    </div>
+    <div id="authFormContent">
+      <input type="text" id="loginUsername" placeholder="用户名" class="w-full auth-input">
+      <input type="password" id="loginPassword" placeholder="密码" class="w-full auth-input" style="margin-top:10px;">
+      <button class="btn btn-primary w-full" id="doAuthBtn" onclick="doLogin()" style="margin-top:10px;">登录</button>
+      <p class="auth-hint">👋 test / 123456（普通）| admin / admin123（管理员）| 或注册</p>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
 <header class="header">
@@ -758,7 +816,17 @@
         <div class="logo-sub">基于 Seedance 2.0 · 无需排队 · 分钟级出片</div>
       </div>
     </a>
-    <div class="header-right">
+    <div class="header-right" id="headerRight" style="display:none;">
+      <div class="credit-balance">
+        <span class="credit-icon">⭐</span>
+        <span style="font-size:13px;color:var(--text-secondary);">积分余额</span>
+        <span id="creditBalance" style="font-weight:700;font-size:17px;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">0</span>
+        <span style="font-size:12px;color:var(--text-secondary);">分</span>
+      </div>
+      <button class="btn btn-small btn-secondary" id="rechargeBtn" onclick="rechargeModal()">💰 充值</button>
+      <button class="btn btn-small btn-secondary" id="claimFreeBtn" onclick="claimFree()">🎁 领$1额度</button>
+      <button class="btn btn-small btn-secondary" id="adminBtn" onclick="toggleAdminPanel()" style="display:none;">🛡️ 管理</button>
+      <button class="btn btn-small btn-secondary" id="logoutBtn" onclick="doLogout()">🚪 退出</button>
       <span class="provider-badge">Atlas Cloud</span>
       <div class="header-status">
         <span class="status-dot" id="statusDot"></span>
@@ -1255,7 +1323,413 @@
   </div>
 </div>
 
+<!-- Admin Panel Modal -->
+<div class="modal-overlay" id="adminPanel">
+  <div class="modal-content" style="max-width:600px;">
+    <div class="modal-header">
+      <h2>🛡️ 管理员面板</h2>
+      <button class="modal-close" onclick="document.getElementById('adminPanel').style.display='none'">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button class="btn btn-small btn-secondary" onclick="renderTransactions()" style="flex:1;">📜 查看交易记录</button>
+        <button class="btn btn-small btn-secondary" onclick="document.getElementById('txnPanel').style.display=(document.getElementById('txnPanel').style.display==='none'?'block':'none');renderTransactions();" style="flex:1;">🔄 刷新</button>
+      </div>
+      <div class="admin-user-list" id="adminUserList"></div>
+      <div id="txnPanel" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+        <h3 style="font-size:14px;margin-bottom:8px;">📜 交易记录</h3>
+        <div style="display:flex;gap:6px;margin-bottom:8px;">
+          <button class="btn btn-xs" onclick="renderTransactions()">全部</button>
+          <button class="btn btn-xs" onclick="renderTransactions('recharge')">充值</button>
+          <button class="btn btn-xs" onclick="renderTransactions('claim')">领取</button>
+          <button class="btn btn-xs" onclick="renderTransactions('consume')">消费</button>
+        </div>
+        <div class="txn-list" id="txnList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
+// ======================== Mock API Backend ========================
+// 结构化 Mock 后端 — 封装所有数据操作，模拟真实API模式
+var SK = {
+  USERS: 'seedance_users',
+  SESSIONS: 'seedance_sessions',
+  API_KEY: 'seedance_api_key',
+  HISTORY: 'seedance_history',
+  TXNS: 'seedance_transactions'
+};
+
+// 延迟模拟网络请求
+function delay(ms) { return new Promise(function(r) { setTimeout(r, ms || 200); }); }
+
+// 数据访问层
+function dbGet(key) { try { return JSON.parse(localStorage.getItem(key)); } catch(e) { return null; } }
+function dbSet(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+function getUsers() { return dbGet(SK.USERS) || []; }
+function saveUsers(u) { dbSet(SK.USERS, u); }
+function getSessions() { return dbGet(SK.SESSIONS) || {}; }
+function saveSessions(s) { dbSet(SK.SESSIONS, s); }
+function getApiKeyConf() { return dbGet(SK.API_KEY) || {}; }
+function saveApiKeyConf(c) { dbSet(SK.API_KEY, c); }
+function getHistory() { return dbGet(SK.HISTORY) || []; }
+function saveHistory(h) { dbSet(SK.HISTORY, h); }
+function getTxns() { return dbGet(SK.TXNS) || []; }
+function saveTxns(t) { dbSet(SK.TXNS, t); }
+
+// 初始化种子数据
+var MOCK_DB_VERSION = 1;
+function initMockDB() {
+  var ver = dbGet('seedance_db_version');
+  var users = dbGet(SK.USERS);
+  console.log('[initMockDB] version:', ver, 'users count:', users ? users.length : 0);
+  // 版本不匹配或用户数据无效 → 重置
+  if (ver !== MOCK_DB_VERSION || !users || !Array.isArray(users) || !users.length || !users[0].password || !users[0].username) {
+    console.log('[initMockDB] resetting seed data');
+    saveUsers([
+      { id: 'admin-1', username: 'admin', password: 'admin123', balance: 200, isAdmin: true, createdAt: Date.now() },
+      { id: 'test-1', username: 'test', password: '123456', balance: 50, isAdmin: false, createdAt: Date.now() }
+    ]);
+    dbSet('seedance_db_version', MOCK_DB_VERSION);
+  }
+  if (!dbGet(SK.SESSIONS)) saveSessions({});
+  if (!dbGet(SK.API_KEY)) saveApiKeyConf({ key: 'sk-atlas-demo-key-please-replace', updatedAt: Date.now() });
+  if (!dbGet(SK.HISTORY)) saveHistory([]);
+  if (!dbGet(SK.TXNS)) saveTxns([]);
+}
+try { initMockDB(); } catch(e) { console.error('[initMockDB] error:', e); }
+
+// ======================== Mock API 函数 ========================
+
+// 根据 token 获取用户
+async function mockGetUser(token) {
+  await delay(50);
+  var sessions = getSessions();
+  var uid = sessions[token];
+  if (!uid) throw new Error('无效的会话令牌');
+  var users = getUsers();
+  var u = users.find(function(x) { return x.id === uid; });
+  if (!u) throw new Error('用户不存在');
+  return { id: u.id, username: u.username, balance: u.balance, isAdmin: !!u.isAdmin };
+}
+
+// 登录
+async function mockLogin(username, password) {
+  await delay(300);
+  var users = getUsers();
+  console.log('[mockLogin] users in DB:', users.map(function(x) { return x.username + '/' + x.password; }));
+  var u = users.find(function(x) { return x.username === username && x.password === password; });
+  if (!u) throw new Error('用户名或密码错误');
+  var token = 'tok_' + u.id + '_' + Date.now();
+  var sessions = getSessions();
+  sessions[token] = u.id;
+  saveSessions(sessions);
+  return { token: token, user: { id: u.id, username: u.username, balance: u.balance, isAdmin: !!u.isAdmin } };
+}
+
+// 注册
+async function mockRegister(username, password) {
+  await delay(300);
+  var users = getUsers();
+  if (users.find(function(x) { return x.username === username; })) throw new Error('用户名已存在');
+  if (username === 'admin') throw new Error('该用户名受保护');
+  var u = {
+    id: 'u_' + Date.now(),
+    username: username,
+    password: password,
+    balance: 20,
+    isAdmin: false,
+    createdAt: Date.now()
+  };
+  users.push(u);
+  saveUsers(users);
+  var token = 'tok_' + u.id + '_' + Date.now();
+  var sessions = getSessions();
+  sessions[token] = u.id;
+  saveSessions(sessions);
+  var txns = getTxns();
+  txns.push({ id: 'tx_' + Date.now(), userId: u.id, type: 'claim', amount: 20, desc: '新用户注册赠送', balance: 20, time: Date.now() });
+  saveTxns(txns);
+  return { token: token, user: { id: u.id, username: u.username, balance: u.balance, isAdmin: false } };
+}
+
+// 充值 (1元=10积分)
+async function mockRecharge(token, amountYuan) {
+  await delay(300);
+  var mku = await mockGetUser(token);
+  var users = getUsers();
+  var idx = users.findIndex(function(x) { return x.id === mku.id; });
+  var credits = amountYuan * 10;
+  users[idx].balance += credits;
+  saveUsers(users);
+  var txns = getTxns();
+  txns.push({ id: 'tx_' + Date.now(), userId: mku.id, type: 'recharge', amount: credits, desc: '充值 ' + amountYuan + ' 元', balance: users[idx].balance, time: Date.now() });
+  saveTxns(txns);
+  return { newBalance: users[idx].balance, added: credits };
+}
+
+// 免费领取 (一次性)
+async function mockClaimFree(token) {
+  await delay(200);
+  var mku = await mockGetUser(token);
+  var users = getUsers();
+  var idx = users.findIndex(function(x) { return x.id === mku.id; });
+  if (users[idx].hasClaimedFree) throw new Error('您已经领取过免费额度了');
+  users[idx].balance += 10;
+  users[idx].hasClaimedFree = true;
+  saveUsers(users);
+  var txns = getTxns();
+  txns.push({ id: 'tx_' + Date.now(), userId: mku.id, type: 'claim', amount: 10, desc: '一次性免费领取 $1 额度', balance: users[idx].balance, time: Date.now() });
+  saveTxns(txns);
+  return { newBalance: users[idx].balance };
+}
+
+// 扣除积分
+async function mockConsume(token, cost) {
+  var mku = await mockGetUser(token);
+  var users = getUsers();
+  var idx = users.findIndex(function(x) { return x.id === mku.id; });
+  if (users[idx].balance < cost) throw new Error('积分不足（需要 ' + cost + ' 积分，当前 ' + users[idx].balance + ' 积分）');
+  users[idx].balance -= cost;
+  saveUsers(users);
+  var txns = getTxns();
+  txns.push({ id: 'tx_' + Date.now(), userId: mku.id, type: 'consume', amount: -cost, desc: '生成视频消耗', balance: users[idx].balance, time: Date.now() });
+  saveTxns(txns);
+  return { newBalance: users[idx].balance };
+}
+
+// 保存生成记录
+async function addHistoryRecord(userId, record) {
+  var h = getHistory();
+  h.unshift({ id: 'h_' + Date.now(), userId: userId, mode: record.mode, prompt: record.prompt, videoUrl: record.videoUrl, time: Date.now() });
+  if (h.length > 50) h = h.slice(0, 50);
+  saveHistory(h);
+}
+
+async function getUserHistory(userId) {
+  return getHistory().filter(function(r) { return r.userId === userId; });
+}
+
+// 获取/更新 API Key (管理员)
+async function mockGetApiKey(token) {
+  var mku = await mockGetUser(token);
+  if (!mku.isAdmin) throw new Error('需要管理员权限');
+  return getApiKeyConf();
+}
+
+async function mockUpdateApiKey(token, newKey) {
+  var mku = await mockGetUser(token);
+  if (!mku.isAdmin) throw new Error('需要管理员权限');
+  saveApiKeyConf({ key: newKey, updatedAt: Date.now() });
+  return { key: newKey };
+}
+
+// ======================== UI 状态管理与认证流程 ========================
+var AUTH = {
+  tokenKey: 'sd_auth_token',  // 兼容旧版登录态
+  token: null,
+  user: null,
+  balance: 0
+};
+
+function switchAuthTab(tab) {
+  var isLogin = tab === 'login';
+  document.getElementById('showLoginTab').classList.toggle('active', isLogin);
+  document.getElementById('showRegTab').classList.toggle('active', !isLogin);
+  if (isLogin) {
+    document.getElementById('authFormContent').innerHTML =
+      '<input type="text" id="loginUsername" placeholder="用户名" class="auth-input">'
+      + '<input type="password" id="loginPassword" placeholder="密码" class="auth-input" style="margin-top:10px;">'
+      + '<button class="btn btn-primary w-full" onclick="doLogin()" style="margin-top:10px;">登录</button>'
+      + '<p class="auth-hint">体验账号: test / 123456 | 管理员: admin / admin123</p>';
+  } else {
+    document.getElementById('authFormContent').innerHTML =
+      '<input type="text" id="regUsername" placeholder="用户名" class="auth-input">'
+      + '<input type="password" id="regPassword" placeholder="密码" class="auth-input" style="margin-top:10px;">'
+      + '<input type="password" id="regConfirm" placeholder="确认密码" class="auth-input" style="margin-top:10px;">'
+      + '<button class="btn btn-primary w-full" onclick="doRegister()" style="margin-top:10px;">注册并登录</button>';
+  }
+}
+
+async function doLogin() {
+  var elU = document.getElementById('loginUsername');
+  var elP = document.getElementById('loginPassword');
+  var u = elU?.value?.trim();
+  var p = elP?.value?.trim();
+  if (!elU || !elP) { toast('DEBUG: 找不到输入框 elU=' + !!elU + ' elP=' + !!elP, 'error'); return; }
+  if (!u || !p) { toast('请输入用户名和密码', 'error'); return; }
+  try {
+    var users = getUsers();
+    toast('正在登录... 用户数:' + users.length, 'info');
+    var res = await mockLogin(u, p);
+    AUTH.token = res.token;
+    AUTH.user = res.user;
+    AUTH.balance = res.user.balance;
+    localStorage.setItem(AUTH.tokenKey, res.token);
+    onAuthSuccess();
+  } catch(e) { toast('登录失败: ' + e.message, 'error'); }
+}
+
+async function doRegister() {
+  var u = document.getElementById('regUsername')?.value?.trim();
+  var p = document.getElementById('regPassword')?.value?.trim();
+  var c = document.getElementById('regConfirm')?.value?.trim();
+  if (!u || !p) { toast('请填写完整信息', 'error'); return; }
+  if (p !== c) { toast('两次密码不一致', 'error'); return; }
+  try {
+    var res = await mockRegister(u, p);
+    AUTH.token = res.token;
+    AUTH.user = res.user;
+    AUTH.balance = res.user.balance;
+    localStorage.setItem(AUTH.tokenKey, res.token);
+    onAuthSuccess();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function onAuthSuccess() {
+  document.getElementById('authOverlay').classList.add('hidden');
+  document.getElementById('headerRight').style.display = '';
+  updateBalanceUI();
+  updateAdminBtn();
+  init();
+}
+
+function doLogout() {
+  localStorage.removeItem(AUTH.tokenKey);
+  AUTH.token = null;
+  AUTH.user = null;
+  AUTH.balance = 0;
+  document.getElementById('headerRight').style.display = 'none';
+  document.getElementById('authOverlay').classList.remove('hidden');
+  toast('已退出登录', 'info');
+}
+
+function updateBalanceUI() {
+  document.getElementById('creditBalance').textContent = AUTH.balance;
+}
+
+async function checkAuth() {
+  var token = localStorage.getItem(AUTH.tokenKey);
+  if (!token) {
+    document.getElementById('authOverlay').classList.remove('hidden');
+    document.getElementById('headerRight').style.display = 'none';
+    return false;
+  }
+  try {
+    var u = await mockGetUser(token);
+    AUTH.token = token;
+    AUTH.user = u;
+    AUTH.balance = u.balance;
+    document.getElementById('authOverlay').classList.add('hidden');
+    document.getElementById('headerRight').style.display = '';
+    updateBalanceUI();
+    updateAdminBtn();
+    return true;
+  } catch(e) {
+    localStorage.removeItem(AUTH.tokenKey);
+    document.getElementById('authOverlay').classList.remove('hidden');
+    document.getElementById('headerRight').style.display = 'none';
+    return false;
+  }
+}
+
+function updateAdminBtn() {
+  var btn = document.getElementById('adminBtn');
+  if (btn) btn.style.display = isAdmin() ? '' : 'none';
+}
+
+function isAdmin() { return AUTH.user && AUTH.user.isAdmin === true; }
+
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ======================== 充值 / 领取 ========================
+async function rechargeModal() {
+  var yuan = prompt('请输入充值金额（元）\n1元 = 10积分', '10');
+  if (!yuan) return;
+  var val = parseInt(yuan);
+  if (isNaN(val) || val <= 0) { toast('请输入有效金额', 'error'); return; }
+  try {
+    var res = await mockRecharge(AUTH.token, val);
+    AUTH.balance = res.newBalance;
+    updateBalanceUI();
+    toast('充值成功！+ ' + res.added + ' 积分', 'success');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function claimFree() {
+  try {
+    var res = await mockClaimFree(AUTH.token);
+    AUTH.balance = res.newBalance;
+    updateBalanceUI();
+    toast('领取成功！+10 积分，仅限一次', 'success');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ======================== 交易记录 ========================
+function renderTransactions(filter) {
+  var list = document.getElementById('txnList');
+  if (!list) return;
+  var txns = getTxns().filter(function(t) { return t.userId === AUTH.user.id; });
+  if (filter) txns = txns.filter(function(t) { return t.type === filter; });
+  txns = txns.slice(0, 30);
+  if (txns.length === 0) { list.innerHTML = '<div class="txn-empty">暂无交易记录</div>'; return; }
+  var typeNames = { recharge: '充值', claim: '领取', consume: '消费', admin_bonus: '管理员赠送', admin_deduct: '管理员扣减' };
+  var html = '';
+  for (var i = 0; i < txns.length; i++) {
+    var t = txns[i];
+    var sign = t.amount >= 0 ? '+' : '';
+    var cls = t.amount >= 0 ? 'txn-plus' : 'txn-minus';
+    html += '<div class="txn-item">' +
+      '<span class="txn-amount ' + cls + '">' + sign + t.amount + '分</span>' +
+      '<span class="txn-desc">' + escHtml(t.desc || (typeNames[t.type] || t.type)) + '</span>' +
+      '<span class="txn-time">' + new Date(t.time).toLocaleString('zh-CN') + '</span>' +
+      '<span class="txn-bal">余额:' + t.balance + '分</span>' +
+    '</div>';
+  }
+  list.innerHTML = html;
+}
+
+// ======================== 管理员面板 — API密钥管理 ========================
+async function renderAdminPanel() {
+  if (!isAdmin()) { toast('需要管理员权限', 'error'); return; }
+  var conf = getApiKeyConf();
+  var html = '<div style="padding:8px 0;">' +
+    '<p style="font-size:13px;color:var(--text-secondary);margin-bottom:10px;">Atlas Cloud API Key（仅管理员可见和修改）</p>' +
+    '<div style="display:flex;gap:8px;">' +
+    '<input type="text" id="adminApiKey" class="auth-input" value="' + escHtml(conf.key || '') + '" style="flex:1;" placeholder="输入 Atlas Cloud API Key">' +
+    '<button class="btn btn-primary" onclick="saveAdminApiKey()" style="white-space:nowrap;">💾 保存</button>' +
+    '</div>' +
+    '<p style="font-size:11px;color:var(--text-secondary);margin-top:6px;">上次更新: ' + (conf.updatedAt ? new Date(conf.updatedAt).toLocaleString('zh-CN') : '从未') + '</p>' +
+    '<p style="font-size:11px;color:var(--text-secondary);margin-top:8px;">💡 此 API Key 用于调用 Atlas Cloud 视频生成服务。保存后所有用户共享此 Key。</p>' +
+    '</div>';
+  document.getElementById('adminUserList').innerHTML = html;
+  document.getElementById('adminPanel').style.display = 'flex';
+  var tp = document.getElementById('txnPanel');
+  if (tp) tp.style.display = 'none';
+}
+
+async function saveAdminApiKey() {
+  var k = document.getElementById('adminApiKey')?.value?.trim();
+  if (!k) { toast('API Key 不能为空', 'error'); return; }
+  try {
+    await mockUpdateApiKey(AUTH.token, k);
+    toast('API Key 已更新', 'success');
+    document.getElementById('adminPanel').style.display = 'none';
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function toggleAdminPanel() {
+  if (!isAdmin()) { toast('需要管理员权限', 'error'); return; }
+  var p = document.getElementById('adminPanel');
+  if (p.style.display === 'flex') { p.style.display = 'none'; }
+  else { renderAdminPanel(); }
+}
+
 // ======================== Config ========================
 var isProxy = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 var C = {
@@ -1289,8 +1763,10 @@ var S = {
 };
 
 // ======================== Init ========================
-function init() {
-  var k = localStorage.getItem(C.AK);
+async function init() {
+  await checkAuth(); // Wait for auth check to complete
+  var k = getApiKeyConf().key; // Use admin-managed API key
+  if (!k || k === 'sk-atlas-demo-key-please-replace') k = localStorage.getItem(C.AK);
   if (k) { S.key = k; document.getElementById('apiKeyInput').value = k; setKeyStat(true); }
   else { setKeyStat(false); }
   loadHist();
@@ -1558,6 +2034,15 @@ async function generate() {
   var prompt = document.getElementById('promptInput').value.trim();
   if (!prompt) { toast('请输入提示词', 'error'); document.getElementById('promptInput').focus(); return; }
 
+  // 积分检查与扣费 (36积分/次)
+  var GEN_COST = 36;
+  if (AUTH.token) {
+    try {
+      var u = await mockGetUser(AUTH.token);
+      if (u.balance < GEN_COST) { toast('积分不足！需要 ' + GEN_COST + ' 积分，当前余额 ' + u.balance + ' 积分，请充值', 'error'); return; }
+    } catch(e) { /* fall through — allow API key users without auth */ }
+  }
+
   updateGenBtn('submit');
   document.getElementById('progSection').classList.add('active');
   document.getElementById('resultSection').classList.remove('active');
@@ -1688,7 +2173,7 @@ function startPoll(id) {
 
   function poll() {
     if (!S.polling) return;
-    callApi(C.POLL + id, 'GET').then(function(data) {
+    callApi(C.POLL + id, 'GET').then(async function(data) {
       var t = data.data || data;
       var stat = t.status;
       var el = Date.now() - S.pollStart;
@@ -1714,6 +2199,10 @@ function startPoll(id) {
         if (url) {
           showResult(url);
           updateGenBtn('done');
+          // 扣费：生成成功后扣除36积分
+          if (AUTH.token) {
+            try { var consumeRes = await mockConsume(AUTH.token, 36); AUTH.balance = consumeRes.newBalance; updateBalanceUI(); } catch(e) {}
+          }
           // Store pending history, save when overlay is dismissed
           S.pendingHist = { id: id, prompt: S.prompt, model: S.model+'/'+S.mode,
             res: document.getElementById('resolution').value,
@@ -1815,9 +2304,13 @@ function startDualPoll(idx) {
   poll();
 }
 
-function checkDualDone() {
+async function checkDualDone() {
   if (S.tasks[0].done && S.tasks[1].done) {
     setStat('ready');
+    // 扣费：对比生成消耗72积分(36x2)
+    if (AUTH.token) {
+      try { var cr = await mockConsume(AUTH.token, 36); AUTH.balance = cr.newBalance; updateBalanceUI(); } catch(e) {}
+    }
     var urls = [];
     if (S.tasks[0].url) urls.push(S.tasks[0].url);
     if (S.tasks[1].url) urls.push(S.tasks[1].url);
@@ -2363,11 +2856,14 @@ function dramaUpdateProg(current, text) {
 
 // Patch init to also init drama
 var _origInit = init;
-init = function() {
-  _origInit();
+init = async function() {
+  await _origInit();
   dramaInit();
   dramaRenderAll();
 };
+
+// Kickstart the app
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>

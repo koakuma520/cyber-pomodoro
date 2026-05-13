@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Seedance Studio 2.0 - AI视频生成平台 | 积分系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #0a0c14 0%, #0f111a 100%);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif;
+            color: #eef2ff;
+            padding: 24px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e1f2e;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b3f5c;
+            border-radius: 10px;
+        }
+
+        .glass-card {
+            background: rgba(18, 22, 35, 0.8);
+            backdrop-filter: blur(2px);
+            border: 1px solid rgba(72, 85, 120, 0.35);
+            border-radius: 28px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(105deg, #6366f1 0%, #8b5cf6 100%);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+        }
+        .btn-secondary {
+            background: #2d2f42;
+            border: 1px solid #4a4f73;
+            border-radius: 40px;
+            padding: 8px 18px;
+            font-weight: 500;
+            color: #d1d5ff;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-secondary:hover {
+            background: #3d405b;
+        }
+        .btn-danger {
+            background: #9f1239;
+            border: none;
+        }
+        input, select, textarea {
+            background: #131622;
+            border: 1px solid #2c2f45;
+            border-radius: 20px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 0.9rem;
+            outline: none;
+            transition: 0.2s;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+        }
+        .badge {
+            background: #1e1f2e;
+            border-radius: 30px;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            color: #a5b4fc;
+        }
+        .video-preview {
+            background: #00000040;
+            border-radius: 24px;
+            overflow: hidden;
+            aspect-ratio: 16 / 9;
+            width: 100%;
+            object-fit: cover;
+        }
+        .history-item {
+            background: #0f111a;
+            border-radius: 20px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-left: 3px solid #8b5cf6;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #c084fc, #60a5fa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-card {
+            width: 420px;
+            max-width: 90%;
+        }
+        .credit-amount {
+            font-weight: 800;
+            font-size: 1.6rem;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            z-index: 1100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            max-width: 500px;
+            width: 90%;
+        }
+        .admin-badge {
+            background: #a855f7;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+    // ---------- 完整 Mock 后端 (基于 localStorage) ----------
+    // 数据结构: users, sessions, apiKeyConfig, history, balances
+    const STORAGE_KEYS = {
+        USERS: 'seedance_users',
+        SESSIONS: 'seedance_sessions', // token -> userId
+        API_KEY: 'seedance_api_key_config',
+        HISTORY: 'seedance_history',
+    };
+
+    // 初始化默认数据
+    function initMockDB() {
+        if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
+            const defaultUsers = [
+                { id: '1', username: 'admin', password: 'admin123', balance: 200, isAdmin: true, createdAt: Date.now() },
+                { id: '2', username: 'test', password: '123456', balance: 50, isAdmin: false, createdAt: Date.now() }
+            ];
+            localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(defaultUsers));
+        }
+        if (!localStorage.getItem(STORAGE_KEYS.API_KEY)) {
+            localStorage.setItem(STORAGE_KEYS.API_KEY, JSON.stringify({ key: 'sk-default-demo-key', lastUpdate: Date.now() }));
+        }
+        if (!localStorage.getItem(STORAGE_KEYS.HISTORY)) {
+            localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify([]));
+        }
+        if (!localStorage.getItem(STORAGE_KEYS.SESSIONS)) {
+            localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify({}));
+        }
+    }
+    initMockDB();
+
+    // 辅助函数
+    function getUsers() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS)); }
+    function saveUsers(users) { localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users)); }
+    function getSessions() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.SESSIONS)); }
+    function saveSessions(sessions) { localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(sessions)); }
+    function getApiKeyConfig() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.API_KEY)); }
+    function saveApiKeyConfig(config) { localStorage.setItem(STORAGE_KEYS.API_KEY, JSON.stringify(config)); }
+    function getHistory() { return JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY)); }
+    function saveHistory(history) { localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history)); }
+
+    // 模拟API响应延迟
+    const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
+
+    // 注册
+    async function mockRegister(username, password) {
+        await delay();
+        const users = getUsers();
+        if (users.find(u => u.username === username)) throw new Error('用户名已存在');
+        const newUser = {
+            id: Date.now().toString(),
+            username,
+            password,
+            balance: 20,   // 新注册送20积分
+            isAdmin: false,
+            createdAt: Date.now(),
+        };
+        users.push(newUser);
+        saveUsers(users);
+        const token = 'token_' + newUser.id + '_' + Date.now();
+        const sessions = getSessions();
+        sessions[token] = newUser.id;
+        saveSessions(sessions);
+        return { token, user: { id: newUser.id, username: newUser.username, balance: newUser.balance, isAdmin: newUser.isAdmin } };
+    }
+
+    // 登录
+    async function mockLogin(username, password) {
+        await delay();
+        const users = getUsers();
+        const user = users.find(u => u.username === username && u.password === password);
+        if (!user) throw new Error('用户名或密码错误');
+        const token = 'token_' + user.id + '_' + Date.now();
+        const sessions = getSessions();
+        sessions[token] = user.id;
+        saveSessions(sessions);
+        return { token, user: { id: user.id, username: user.username, balance: user.balance, isAdmin: user.isAdmin } };
+    }
+
+    // 通过token获取用户
+    async function mockGetUserByToken(token) {
+        await delay(50);
+        const sessions = getSessions();
+        const userId = sessions[token];
+        if (!userId) throw new Error('无效token');
+        const users = getUsers();
+        const user = users.find(u => u.id === userId);
+        if (!user) throw new Error('用户不存在');
+        return { id: user.id, username: user.username, balance: user.balance, isAdmin: user.isAdmin };
+    }
+
+    // 充值积分 (1元=10积分)
+    async function mockRecharge(token, amountYuan) {
+        await delay();
+        const user = await mockGetUserByToken(token);
+        const users = getUsers();
+        const idx = users.findIndex(u => u.id === user.id);
+        if (idx === -1) throw new Error('用户不存在');
+        const addCredits = amountYuan * 10;
+        users[idx].balance += addCredits;
+        saveUsers(users);
+        return { newBalance: users[idx].balance, added: addCredits };
+    }
+
+    // 免费领取额度 (+10积分，每人限一次，简单实现基于无限制但前端控制重复提醒，后端简单每日限制? 演示每人仅可领取一次)
+    async function mockClaimFree(token) {
+        await delay();
+        const user = await mockGetUserByToken(token);
+        const users = getUsers();
+        const idx = users.findIndex(u => u.id === user.id);
+        if (users[idx].hasClaimedFree) throw new Error('您已经领取过免费额度了');
+        users[idx].balance += 10;
+        users[idx].hasClaimedFree = true;
+        saveUsers(users);
+        return { newBalance: users[idx].balance };
+    }
+
+    // 扣除积分（生成视频需要36积分）
+    async function mockConsumeCredits(token, cost = 36) {
+        const user = await mockGetUserByToken(token);
+        const users = getUsers();
+        const idx = users.findIndex(u => u.id === user.id);
+        if (users[idx].balance < cost) throw new Error('积分不足');
+        users[idx].balance -= cost;
+        saveUsers(users);
+        return { newBalance: users[idx].balance };
+    }
+
+    // 保存生成记录
+    async function addHistoryRecord(userId, record) {
+        const history = getHistory();
+        history.unshift({ ...record, userId, createdAt: Date.now() });
+        if (history.length > 50) history.pop();
+        saveHistory(history);
+    }
+
+    async function getUserHistory(userId) {
+        const history = getHistory();
+        return history.filter(h => h.userId === userId);
+    }
+
+    // 模拟视频生成
+    async function mockGenerateVideo(token, params) {
+        // 先扣费
+        await mockConsumeCredits(token, 36);
+        const user = await mockGetUserByToken(token);
+        // 模拟生成任务 延迟2秒
+        await delay(2500);
+        // 生成模拟视频URL (使用示例视频或占位)
+        const fakeVideoUrl = 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'; // 公开示例视频
+        const record = {
+            id: Date.now().toString(),
+            mode: params.mode,
+            prompt: params.prompt,
+            videoUrl: fakeVideoUrl,
+            createdAt: Date.now(),
+        };
+        await addHistoryRecord(user.id, record);
+        return { videoUrl: fakeVideoUrl, taskId: record.id };
+    }
+
+    // 更新API Key (仅管理员)
+    async function mockUpdateApiKey(token, newKey) {
+        const user = await mockGetUserByToken(token);
+        if (!user.isAdmin) throw new Error('无权限');
+        saveApiKeyConfig({ key: newKey, lastUpdate: Date.now() });
+        return { key: newKey };
+    }
+
+    async function mockGetApiKey(token) {
+        const user = await mockGetUserByToken(token);
+        if (!user.isAdmin) throw new Error('无权限');
+        return getApiKeyConfig();
+    }
+
+    // ------------------ 前端 Vue-like 渲染 ------------------
+    let currentToken = localStorage.getItem('accessToken');
+    let currentUser = null;
+    let appContainer = document.getElementById('app');
+
+    // 路由/状态管理
+    async function initApp() {
+        if (currentToken) {
+            try {
+                const user = await mockGetUserByToken(currentToken);
+                currentUser = user;
+                renderMainApp();
+            } catch (e) {
+                localStorage.removeItem('accessToken');
+                currentToken = null;
+                renderLogin();
+            }
+        } else {
+            renderLogin();
+        }
+    }
+
+    function renderLogin() {
+        appContainer.innerHTML = `
+            <div class="login-overlay" id="loginOverlay">
+                <div class="login-card glass-card p-6">
+                    <div class="text-center mb-6">
+                        <h2 class="text-3xl font-bold gradient-text">Seedance Studio</h2>
+                        <p class="text-gray-300 text-sm">AI视频生成 · 积分系统 1元=10积分</p>
+                    </div>
+                    <div class="tabs flex gap-2 mb-5">
+                        <button id="showLoginBtn" class="flex-1 py-2 rounded-full bg-indigo-600/60">登录</button>
+                        <button id="showRegisterBtn" class="flex-1 py-2 rounded-full bg-white/10">注册</button>
+                    </div>
+                    <div id="authFormContainer">
+                        <div>
+                            <input type="text" id="loginUsername" placeholder="用户名" class="w-full mb-3">
+                            <input type="password" id="loginPassword" placeholder="密码" class="w-full mb-4">
+                            <button id="doLoginBtn" class="btn-primary w-full">登录</button>
+                            <p class="text-xs text-center text-gray-400 mt-3">👋 体验账号: test / 123456 | 管理员: admin / admin123</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('showLoginBtn')?.addEventListener('click', () => {
+            document.getElementById('authFormContainer').innerHTML = `
+                <input type="text" id="loginUsername" placeholder="用户名" class="w-full mb-3">
+                <input type="password" id="loginPassword" placeholder="密码" class="w-full mb-4">
+                <button id="doLoginBtn" class="btn-primary w-full">登录</button>
+            `;
+            document.getElementById('doLoginBtn')?.addEventListener('click', async () => {
+                const username = document.getElementById('loginUsername')?.value;
+                const pwd = document.getElementById('loginPassword')?.value;
+                if (!username || !pwd) return alert('请填写账号密码');
+                try {
+                    const res = await mockLogin(username, pwd);
+                    localStorage.setItem('accessToken', res.token);
+                    currentToken = res.token;
+                    currentUser = res.user;
+                    renderMainApp();
+                } catch (err) { alert(err.message); }
+            });
+        });
+        document.getElementById('showRegisterBtn')?.addEventListener('click', () => {
+            document.getElementById('authFormContainer').innerHTML = `
+                <input type="text" id="regUsername" placeholder="用户名" class="w-full mb-3">
+                <input type="password" id="regPassword" placeholder="密码" class="w-full mb-3">
+                <input type="password" id="regConfirm" placeholder="确认密码" class="w-full mb-4">
+                <button id="doRegisterBtn" class="btn-primary w-full">注册并登录</button>
+            `;
+            document.getElementById('doRegisterBtn')?.addEventListener('click', async () => {
+                const username = document.getElementById('regUsername')?.value;
+                const pwd = document.getElementById('regPassword')?.value;
+                const confirm = document.getElementById('regConfirm')?.value;
+                if (!username || !pwd) return alert('请填写完整');
+                if (pwd !== confirm) return alert('两次密码不一致');
+                if (username === 'admin') return alert('admin账号保留，请使用其他用户名');
+                try {
+                    const res = await mockRegister(username, pwd);
+                    localStorage.setItem('accessToken', res.token);
+                    currentToken = res.token;
+                    currentUser = res.user;
+                    renderMainApp();
+                } catch (err) { alert(err.message); }
+            });
+        });
+        const loginBtn = document.getElementById('doLoginBtn');
+        if (loginBtn) loginBtn.addEventListener('click', async () => {
+            const username = document.getElementById('loginUsername')?.value;
+            const pwd = document.getElementById('loginPassword')?.value;
+            if (!username || !pwd) return alert('请填写账号密码');
+            try {
+                const res = await mockLogin(username, pwd);
+                localStorage.setItem('accessToken', res.token);
+                currentToken = res.token;
+                currentUser = res.user;
+                renderMainApp();
+            } catch (err) { alert(err.message); }
+        });
+    }
+
+    async function renderMainApp() {
+        if (!currentUser) return;
+        // 刷新余额
+        const userData = await mockGetUserByToken(currentToken);
+        currentUser = userData;
+        const isAdmin = currentUser.isAdmin === true;
+        // 获取历史记录
+        const historyList = await getUserHistory(currentUser.id);
+        
+        appContainer.innerHTML = `
+            <div class="max-w-[1600px] mx-auto">
+                <!-- 头部导航 -->
+                <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-2xl font-bold tracking-tight">✨ Seedance Studio</h1>
+                        ${isAdmin ? '<span class="admin-badge">管理员</span>' : ''}
+                        <span class="badge">Atlas Cloud Ready</span>
+                    </div>
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <div class="glass-card px-4 py-2 rounded-full flex items-center gap-2">
+                            <span>⭐ 积分余额</span>
+                            <span id="creditBalance" class="font-bold text-xl text-amber-300">${currentUser.balance}</span>
+                            <span>分</span>
+                        </div>
+                        <button id="rechargeBtn" class="btn-secondary text-sm">💰 充值积分</button>
+                        <button id="claimFreeBtn" class="btn-secondary text-sm">🎁 免费领取$1额度</button>
+                        ${isAdmin ? '<button id="adminPanelBtn" class="btn-secondary text-sm bg-purple-800/40">🔧 管理面板</button>' : ''}
+                        <button id="logoutBtn" class="btn-secondary text-sm">🚪 退出</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- 左侧主表单 -->
+                    <div class="lg:col-span-2 glass-card p-5 space-y-5">
+                        <div class="flex gap-3 border-b border-white/10 pb-3">
+                            <button id="txt2videoTab" class="tab-btn active-tab px-5 py-2 rounded-full font-medium">📝 文生视频</button>
+                            <button id="img2videoTab" class="tab-btn px-5 py-2 rounded-full font-medium">🖼️ 图生视频</button>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-1">提示词 (中英文结合效果更佳)</label>
+                            <textarea id="promptInput" rows="3" class="w-full resize-none" placeholder="例：一只柴犬在雪地里奔跑，电影质感，柔和自然光，cyberpunk neon, 赛博朋克"></textarea>
+                            <div class="text-xs text-gray-400 mt-1">✨ Seedance2.0 对英文提示词理解更佳，建议中英文结合使用</div>
+                        </div>
+
+                        <div id="imgUploadArea" style="display: none;">
+                            <label class="block text-sm font-medium mb-1">上传参考图片 (Base64模拟)</label>
+                            <input type="file" id="imageUpload" accept="image/jpeg,image/png" class="w-full">
+                            <div id="imgPreview" class="mt-2 w-32 h-32 rounded-lg overflow-hidden border border-dashed border-gray-500 hidden"></div>
+                        </div>
+
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div><label class="text-xs text-gray-400">模型</label><select id="modelSelect" class="w-full text-sm"><option>Seedance 2.0</option><option>Seedance Pro</option></select></div>
+                            <div><label class="text-xs text-gray-400">分辨率</label><select id="resolutionSelect" class="w-full text-sm"><option>720p</option><option>1080p</option></select></div>
+                            <div><label class="text-xs text-gray-400">比例</label><select id="ratioSelect" class="w-full text-sm"><option>自适应</option><option>16:9</option><option>9:16</option></select></div>
+                            <div><label class="text-xs text-gray-400">时长</label><select id="durationSelect" class="w-full text-sm"><option>5秒</option><option>10秒</option></select></div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-4 justify-between items-center">
+                            <div class="flex gap-3">
+                                <label class="flex items-center gap-1 text-sm"><input type="checkbox" id="soundEffect"> 自动匹配环境音效</label>
+                                <label class="flex items-center gap-1 text-sm"><input type="checkbox" id="watermark"> 包含平台水印</label>
+                            </div>
+                            <div class="bg-black/30 px-4 py-2 rounded-full">
+                                <span class="text-sm">💰 预估消耗: <strong id="estCost" class="text-yellow-300">36</strong> 积分 (约 ¥3.6)</span>
+                            </div>
+                        </div>
+
+                        <button id="generateBtn" class="btn-primary w-full py-3 text-lg">✨ 开始生成视频</button>
+                        <div id="genStatus" class="text-sm text-center text-indigo-300"></div>
+
+                        <div id="resultVideoArea" class="mt-2 hidden">
+                            <p class="mb-2 text-sm font-semibold">🎬 生成结果</p>
+                            <video id="generatedVideo" controls class="video-preview w-full rounded-xl"></video>
+                        </div>
+                    </div>
+
+                    <!-- 右侧：灵感墙 + 历史记录 (完全移除了API密钥卡片) -->
+                    <div class="space-y-5">
+                        <div class="glass-card p-4">
+                            <h3 class="font-bold flex items-center gap-2 mb-3">✨ 灵感墙 · 热门提示词</h3>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="badge cursor-pointer hover:bg-indigo-800/50" data-word="柴犬雪地奔跑赛博朋克，霓虹灯光，电影质感">🐕 柴犬赛博朋克</span>
+                                <span class="badge cursor-pointer" data-word="水墨风山水画，云雾缭绕，古代意境，轻柔雾气">🎋 水墨风山水</span>
+                                <span class="badge cursor-pointer" data-word="未来城市日落，霓虹灯，赛博朋克2077风格，高细节">🌆 未来城市日落</span>
+                                <span class="badge cursor-pointer" data-word="橘猫窗边午后阳光，胶片质感，温暖色调">🐈 橘猫窗边</span>
+                                <span class="badge cursor-pointer" data-word="赛博朋克早餐摊，蒸汽波，街头美食">🥟 赛博早餐摊</span>
+                            </div>
+                        </div>
+                        <div class="glass-card p-4">
+                            <h3 class="font-bold flex items-center gap-2 mb-3">📜 历史记录</h3>
+                            <div id="historyList" class="max-h-[320px] overflow-y-auto space-y-2">
+                                ${historyList.length === 0 ? '<div class="text-gray-400 text-sm text-center py-4">暂无生成记录</div>' : 
+                                    historyList.map(item => `
+                                        <div class="history-item">
+                                            <div class="flex justify-between text-xs text-gray-400"><span>${item.mode === 'txt2video' ? '文生视频' : '图生视频'}</span><span>${new Date(item.createdAt).toLocaleString()}</span></div>
+                                            <div class="text-sm font-medium truncate">${item.prompt.substring(0, 50)}</div>
+                                            ${item.videoUrl ? `<video src="${item.videoUrl}" class="w-full h-20 object-cover rounded mt-2" controls preload="none"></video>` : '<span class="text-xs text-rose-300">预览失效</span>'}
+                                        </div>
+                                    `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 绑定事件
+        const txtTab = document.getElementById('txt2videoTab');
+        const imgTab = document.getElementById('img2videoTab');
+        const imgArea = document.getElementById('imgUploadArea');
+        txtTab.addEventListener('click', () => {
+            txtTab.classList.add('active-tab', 'bg-indigo-600/40');
+            imgTab.classList.remove('active-tab', 'bg-indigo-600/40');
+            imgArea.style.display = 'none';
+        });
+        imgTab.addEventListener('click', () => {
+            imgTab.classList.add('active-tab', 'bg-indigo-600/40');
+            txtTab.classList.remove('active-tab', 'bg-indigo-600/40');
+            imgArea.style.display = 'block';
+        });
+        document.getElementById('rechargeBtn').onclick = async () => {
+            let yuan = prompt('充值金额 (元) \n1元 = 10积分', '10');
+            if (!yuan) return;
+            const val = parseInt(yuan);
+            if (isNaN(val) || val <= 0) return alert('输入有效金额');
+            try {
+                const result = await mockRecharge(currentToken, val);
+                alert(`充值成功！增加 ${result.added} 积分`);
+                const fresh = await mockGetUserByToken(currentToken);
+                currentUser = fresh;
+                document.getElementById('creditBalance').innerText = currentUser.balance;
+            } catch(e) { alert(e.message); }
+        };
+        document.getElementById('claimFreeBtn').onclick = async () => {
+            try {
+                await mockClaimFree(currentToken);
+                alert('领取成功 +10 积分');
+                const fresh = await mockGetUserByToken(currentToken);
+                currentUser = fresh;
+                document.getElementById('creditBalance').innerText = currentUser.balance;
+            } catch(e) { alert(e.message); }
+        };
+        document.getElementById('logoutBtn').onclick = () => {
+            localStorage.removeItem('accessToken');
+            currentToken = null;
+            renderLogin();
+        };
+        // 生成视频逻辑
+        document.getElementById('generateBtn').onclick = async () => {
+            const mode = txtTab.classList.contains('active-tab') ? 'txt2video' : 'img2video';
+            const prompt = document.getElementById('promptInput').value.trim();
+            if (!prompt) return alert('请输入提示词');
+            const genBtn = document.getElementById('generateBtn');
+            const statusDiv = document.getElementById('genStatus');
+            genBtn.disabled = true;
+            genBtn.innerText = '⏳ 生成中 (扣除36积分) ...';
+            statusDiv.innerText = '检查积分余额...';
+            try {
+                // 先检查余额是否足够
+                const userCheck = await mockGetUserByToken(currentToken);
+                if (userCheck.balance < 36) throw new Error('积分不足，请充值 (需要36积分)');
+                statusDiv.innerText = '🎬 AI模型正在创作视频...';
+                const res = await mockGenerateVideo(currentToken, { mode, prompt });
+                statusDiv.innerText = '✅ 生成完成！';
+                const videoDiv = document.getElementById('resultVideoArea');
+                videoDiv.style.display = 'block';
+                const videoElem = document.getElementById('generatedVideo');
+                videoElem.src = res.videoUrl;
+                videoElem.load();
+                // 刷新余额和历史
+                const freshUser = await mockGetUserByToken(currentToken);
+                currentUser = freshUser;
+                document.getElementById('creditBalance').innerText = currentUser.balance;
+                // 刷新历史记录
+                const newHistory = await getUserHistory(currentUser.id);
+                const historyContainer = document.getElementById('historyList');
+                if (historyContainer) {
+                    historyContainer.innerHTML = newHistory.map(item => `
+                        <div class="history-item">
+                            <div class="flex justify-between text-xs text-gray-400"><span>${item.mode === 'txt2video' ? '文生视频' : '图生视频'}</span><span>${new Date(item.createdAt).toLocaleString()}</span></div>
+                            <div class="text-sm font-medium truncate">${item.prompt.substring(0, 50)}</div>
+                            <video src="${item.videoUrl}" class="w-full h-20 object-cover rounded mt-2" controls preload="none"></video>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                alert('生成失败: ' + err.message);
+                statusDiv.innerText = '❌ 生成失败，积分未扣除';
+            } finally {
+                genBtn.disabled = false;
+                genBtn.innerText = '✨ 开始生成视频';
+            }
+        };
+        // 图片预览
+        const fileInput = document.getElementById('imageUpload');
+        if (fileInput) fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    const previewDiv = document.getElementById('imgPreview');
+                    previewDiv.style.display = 'block';
+                    previewDiv.innerHTML = `<img src="${ev.target.result}" class="w-full h-full object-cover">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+        // 灵感墙点击填充
+        document.querySelectorAll('.badge[data-word]').forEach(el => {
+            el.addEventListener('click', () => {
+                const word = el.getAttribute('data-word');
+                document.getElementById('promptInput').value = word;
+            });
+        });
+        // 管理员面板 (仅在admin下展示)
+        if (isAdmin) {
+            const adminBtn = document.getElementById('adminPanelBtn');
+            adminBtn?.addEventListener('click', async () => {
+                const apiConfig = await mockGetApiKey(currentToken);
+                const modalDiv = document.createElement('div');
+                modalDiv.className = 'modal';
+                modalDiv.innerHTML = `
+                    <div class="modal-content glass-card p-6">
+                        <h3 class="text-xl font-bold mb-3">🔐 管理员面板 - API密钥管理</h3>
+                        <p class="text-sm text-gray-300 mb-2">Atlas Cloud API Key (仅管理员可见/配置)</p>
+                        <input type="text" id="adminApiKeyInput" class="w-full mb-3" placeholder="输入API密钥" value="${apiConfig.key || ''}">
+                        <div class="flex gap-3">
+                            <button id="saveApiKeyBtn" class="btn-primary">保存API Key</button>
+                            <button id="closeModalBtn" class="btn-secondary">关闭</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modalDiv);
+                document.getElementById('saveApiKeyBtn')?.addEventListener('click', async () => {
+                    const newKey = document.getElementById('adminApiKeyInput').value;
+                    if (!newKey) return alert('API Key不能为空');
+                    await mockUpdateApiKey(currentToken, newKey);
+                    alert('API密钥已更新');
+                    modalDiv.remove();
+                });
+                document.getElementById('closeModalBtn')?.addEventListener('click', () => modalDiv.remove());
+            });
+        }
+        // 样式辅助
+        if (!document.querySelector('#style-tab-active')) {
+            const style = document.createElement('style');
+            style.id = 'style-tab-active';
+            style.textContent = `.active-tab { background: rgba(139, 92, 246, 0.3); border-bottom: 2px solid #a855f7; }`;
+            document.head.appendChild(style);
+        }
+    }
+
+    initApp();
+</script>
+</body>
+</html>
