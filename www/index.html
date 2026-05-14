@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>金鼎囍铺 — 会泽新人的囍事专家</title>
+  <link rel="stylesheet" href="css/app.css">
+  <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
+  <script>window.wx=window.wx||{};</script>
+</head>
+<body>
+
+  <!-- 顶部导航 -->
+  <header class="header">
+    <div class="header-brand">🈴 金鼎囍铺 <span style="font-size:0.65rem;font-weight:400;color:var(--text-muted);margin-left:4px;">会泽新人的囍事专家</span></div>
+    <div class="header-actions" id="headerActions">
+      <button class="btn btn-xs btn-primary" id="btnLogin">登录</button>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="content" id="content">
+    <div style="text-align:center;padding:80px 20px;color:var(--text-muted);">
+      <div style="font-size:3rem;margin-bottom:12px;">🍬</div>
+      <p>加载中...</p>
+    </div>
+  </main>
+
+  <!-- 底部导航 -->
+  <nav class="bottom-nav" id="bottomNav"></nav>
+
+  <!-- 首次访问欢迎覆盖层 -->
+  <div class="welcome-overlay" id="welcomeOverlay">
+    <div class="welcome-panel">
+      <div class="welcome-close" id="welcomeClose">✕</div>
+      <div class="welcome-logo">💒</div>
+      <h2 class="welcome-title">欢迎来到金鼎囍铺</h2>
+      <p class="welcome-slogan">会泽新人的囍事专家，从一颗糖到一场婚礼，金鼎囍铺全包了。</p>
+      <p class="welcome-gift">🎁 新人见面礼</p>
+      <p class="welcome-desc">关注即送【最新喜糖盒图册 + 婚庆案例集 + 备婚避坑清单】</p>
+      <div class="welcome-actions">
+        <a href="#/gallery" class="welcome-btn welcome-btn-pink">📸 灵感库</a>
+        <a href="#/home" class="welcome-btn welcome-btn-gold">🍬 逛糖铺</a>
+        <a href="#/consult" class="welcome-btn welcome-btn-tiffany">💒 免费咨询</a>
+      </div>
+    </div>
+  </div>
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-panel" id="authPanel"></div>
+  </div>
+
+  <!-- 模态框 -->
+  <div class="modal-overlay" id="modalOverlay"></div>
+
+  <!-- Toast 容器 -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Loading -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <!-- JS 加载顺序很重要 -->
+  <script src="js/wechat-sdk.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/components.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/pages/home.js"></script>
+  <script src="js/pages/product-detail.js"></script>
+  <script src="js/pages/gallery.js"></script>
+  <script src="js/pages/consult.js"></script>
+  <script src="js/pages/cart.js"></script>
+  <script src="js/pages/checkout.js"></script>
+  <script src="js/pages/orders.js"></script>
+  <script src="js/pages/admin.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

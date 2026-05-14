@@ -4,24 +4,117 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概览
 
-本仓库包含两个独立项目：
+本仓库包含三个独立项目：
 
-- **Seedance Studio** (根目录) — AI 视频生成网页应用，调用 Atlas Cloud API (Seedance 2.0 模型)
+- **金鼎囍铺** (根目录) — 糖果婚庆微信公众号 H5 商城，含完整电商+微信集成
+- **Seedance Studio** (`seedance-studio.html`) — AI 视频生成网页应用，调用 Atlas Cloud API
 - **Pomodoro** (`pomodoro/`) — Electron 番茄钟应用（详见 `pomodoro/CLAUDE.md`）
 
 ## 常用命令
 
 ```bash
-# 启动 Seedance Studio 代理服务器（必需，端口 3456）
-node proxy-server.js
+# 启动金鼎囍铺主服务器（端口 3457，包含所有功能）
+node server.js
 
-# 启动全栈认证服务器（可选，端口 3457）
-cd server && npm start
+# 设置微信配置（可选，未设置时回退为模拟模式）
+set WX_APPID=wx你的AppID
+set WX_SECRET=你的AppSecret
+set WX_MCHID=你的商户号          # 微信支付需要
+set WX_MCH_KEY=你的商户密钥       # 微信支付需要
+set JWT_SECRET=随机字符串         # 生产环境必设
 
 # 访问页面
-# http://localhost:3456  （代理模式）
-# http://localhost:3457  （全栈模式，含 Express 后端）
+# http://localhost:3457           （金鼎囍铺商城）
+# http://localhost:3457/admin.html（管理后台）
 ```
+
+## 金鼎囍铺 架构（微信公众号 H5 商城）
+
+### 文件结构
+
+```
+server.js                 # Express 主入口（端口 3457），挂载所有路由
+package.json              # 根目录依赖（express, jsonwebtoken, bcryptjs）
+.env.example              # 环境变量模板
+www/                      # 前端静态文件
+  index.html              # SPA 壳体（微信 meta 标签、3 菜单底栏、欢迎覆盖层）
+  admin.html              # 独立管理后台页面
+  css/app.css             # 完整主题（玫瑰粉+香槟金+蒂芙尼蓝）
+  js/
+    wechat-sdk.js         # 微信 JS-SDK / OAuth / 支付 前端封装 (WX_SDK)
+    config.js             # C 配置常量（分类、订单状态、支付方式）
+    state.js              # SK 存储键、AUTH 全局状态、dbGet/dbSet
+    api.js                # REST 封装（apiGet/apiPost/apiPut/apiDelete，自动注入 JWT）
+    ui.js                 # Toast、Modal、Loading、空状态
+    components.js         # 可复用渲染函数（导航栏、商品卡片、规格选择器等）
+    auth.js               # 登录/注册覆盖层
+    app.js                # 入口：哈希路由、OAuth 回调、SDK 初始化
+    pages/
+      home.js             # 糖铺子首页（双列商品网格、分类、搜索、试吃包推荐）
+      product-detail.js   # 商品详情（规格选择、加购、立即购买）
+      gallery.js          # 灵感库（6 套婚礼案例、分类筛选、同款推荐）
+      consult.js          # 档期咨询（服务报价、咨询表单、关于我们）
+      cart.js             # 购物车
+      checkout.js         # 结算（微信支付/模拟支付自动切换）
+      orders.js           # 我的订单
+      admin.js            # 管理后台内嵌版
+    admin-app.js          # 管理后台独立应用逻辑
+server/
+  wechat.js               # 微信核心服务（AccessToken/JSAPI/OAuth/签名/支付）
+  routes/
+    auth.js               # 注册/登录/用户资料（JWT + bcrypt）
+    products.js           # 商品 CRUD + 分类 + 搜索 + 分页
+    cart.js               # 购物车 CRUD + 合并
+    orders.js             # 订单生命周期（创建→支付→发货→完成→取消）
+    admin.js              # 管理后台（统计、商品管理、订单管理、用户列表）
+    wechat.js             # 微信 API（OAuth入口/回调、JS-SDK签名、统一下单、支付通知）
+  data/                   # JSON 数据库（自动创建）
+    users.json / products.json / carts.json / orders.json / transactions.json
+```
+
+### 数据模型
+
+- **用户** — `{ id, username, passwordHash, wxOpenid?, phone, address, isAdmin, createdAt }`。微信 OAuth 用户无密码
+- **商品** — `{ id, name, category, subCategory, description, price, originalPrice, images[], specs[], stock, sales, isOnSale, isFeatured }`
+- **订单** — `{ id (如 20260514-XXXX), userId, items[], totalAmount, status, shippingAddress, paymentMethod, wxTransactionId?, *At }`
+- **购物车** — `{ userId, items: [{ productId, name, price, image, quantity, selectedSpecs }] }`
+- **分类** — `candy`(糖果) | `wedding`(婚庆) | `gift`(伴手礼)
+- **订单状态** — `pending → paid → shipped → completed`，`cancelled` 仅可从 `pending` 进入
+
+### 前端路由（哈希 SPA）
+
+| Hash | 页面 | 需登录 |
+|------|------|--------|
+| `#/home` | 糖铺子（商品目录） | 否 |
+| `#/product/:id` | 商品详情 | 否 |
+| `#/gallery` | 灵感库（婚礼案例） | 否 |
+| `#/consult` | 档期咨询 | 否 |
+| `#/cart` | 购物车 | 是 |
+| `#/checkout` | 结算 | 是 |
+| `#/orders` | 我的订单 | 是 |
+| `#/profile` | 个人中心 | 是 |
+| `#/admin` | 管理后台（需管理员） | 是 |
+
+### 微信集成
+
+三种模式自动适配：
+
+| 能力 | 微信环境 | 非微信环境 |
+|------|----------|-----------|
+| 登录 | 静默 OAuth 自动登录（snsapi_base） | 手动账号密码登录 |
+| 支付 | 微信支付 JSAPI（需商户号） | 模拟支付 |
+| 分享 | JS-SDK 自定义分享文案 | 浏览器原生 |
+
+OAuth 流程：`用户访问 → 后端检测无 token → 跳转微信授权 → code 换 openid → 自动创建/绑定用户 → 签发 JWT → 回传前端`
+
+### 关键模式
+
+- **JSON 文件存储** — `loadDB(filename)` / `saveDB(filename, data)` 同步读写，整个文件重写。`data/` 目录自动创建
+- **JWT 认证** — `authMiddleware` 从 `Authorization: Bearer <token>` 提取并验证，`req.user` 获取当前用户
+- **种子数据** — `seedUsers()` 和 `seedProducts()` 独立执行，幂等（检查已存在则跳过）
+- **全局状态** — 前端使用 `AUTH`(用户/token)、`P`(页面状态)、`C`(配置常量)、`SK`(存储键) 全局对象
+- **前端 JS 加载顺序** — config.js → state.js → api.js → ui.js → components.js → auth.js → 各页面 → app.js，顺序不能乱
+- **购物车同步** — 未登录存 localStorage，登录后 `POST /api/cart/merge` 合并到服务端
 
 ## Seedance Studio 架构
 

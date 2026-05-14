@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理后台 — 金鼎囍铺</title>
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    body { padding-bottom: 0; }
+    .admin-container { display: flex; min-height: 100vh; }
+    .admin-sidebar {
+      width: 220px; background: var(--bg-card);
+      border-right: 1px solid var(--border-light);
+      padding: 20px 0; flex-shrink: 0;
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+    }
+    .admin-sidebar-title {
+      font-size: 1.1rem; font-weight: 700;
+      padding: 0 20px 16px; border-bottom: 1px solid var(--border-light);
+      margin-bottom: 8px;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .admin-nav-item {
+      display: block; width: 100%; padding: 14px 20px;
+      text-align: left; background: none; border: none;
+      font-size: 0.9rem; color: var(--text-secondary);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .admin-nav-item:hover, .admin-nav-item.active {
+      background: var(--accent-light); color: var(--accent);
+    }
+    .admin-main { flex: 1; margin-left: 220px; padding: 24px; }
+    .admin-main-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .admin-main-header h2 { font-size: 1.2rem; }
+
+    @media (max-width: 768px) {
+      .admin-container { flex-direction: column; }
+      .admin-sidebar {
+        position: static; width: 100%; height: auto;
+        display: flex; overflow-x: auto; padding: 8px; gap: 4px;
+        border-right: none; border-bottom: 1px solid var(--border-light);
+      }
+      .admin-sidebar-title { display: none; }
+      .admin-nav-item { flex-shrink: 0; width: auto; padding: 8px 14px; }
+      .admin-main { margin-left: 0; padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <!-- 侧边栏 -->
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar-title">🈴 金鼎囍铺 · 管理后台</div>
+      <button class="admin-nav-item active" data-view="stats">📊 仪表板</button>
+      <button class="admin-nav-item" data-view="products">📦 商品管理</button>
+      <button class="admin-nav-item" data-view="orders">📋 订单管理</button>
+      <button class="admin-nav-item" data-view="users">👥 用户管理</button>
+      <hr style="margin:12px 0;border-color:var(--border-light);">
+      <a href="/" style="display:block;padding:14px 20px;font-size:0.9rem;color:var(--text-secondary);text-decoration:none;">🏠 返回商城</a>
+    </aside>
+
+    <!-- 主区域 -->
+    <main class="admin-main" id="adminMain">
+      <div style="text-align:center;padding:80px;color:var(--text-muted);">加载中...</div>
+    </main>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/components.js"></script>
+  <script src="js/admin-app.js"></script>
+</body>
+</html>
