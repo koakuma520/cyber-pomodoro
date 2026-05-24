@@ -167,7 +167,13 @@ module.exports = function (deps) {
                 saveDB('transactions.json', txns);
               } else {
                 users[uidx].plan = order.plan;
+                const planDef = loadDB('plans.json').find(p => p.id === order.plan);
+                const planCredits = planDef ? (planDef.creditsPerMonth || planDef.videosPerMonth || 0) : 0;
+                users[uidx].balance += planCredits;
                 saveDB('users.json', users);
+                const txns = loadDB('transactions.json');
+                txns.push({ id: crypto.randomUUID(), userId: users[uidx].id, type: 'plan_activate', amount: planCredits, desc: '微信支付-套餐激活: ' + (planDef ? planDef.name : ''), balance: users[uidx].balance, createdAt: new Date().toISOString() });
+                saveDB('transactions.json', txns);
               }
             }
           }

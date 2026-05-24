@@ -50,7 +50,7 @@ function renderDashboardGuest() {
       + '<h1 class="dash-hero-title">AI 电商短视频批量生成平台</h1>'
       + '<p class="dash-hero-desc">把商品链接变成可直接投放的营销视频，支持淘宝/1688/京东/Shopify，1人管100个账号的内容产能</p>'
       + '<div style="margin-top:12px;display:flex;gap:8px;">'
-      + '<button class="btn btn-primary" onclick="showAuthModal(\'register\')" style="background:#fff;color:var(--accent);">🚀 免费注册 · 送10积分</button>'
+      + '<button class="btn btn-primary" onclick="showAuthModal(\'register\')" style="background:#fff;color:var(--accent);">🚀 免费注册 · 送5积分</button>'
       + '<button class="btn btn-secondary" onclick="showAuthModal(\'login\')" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25);">登录</button>'
       + '</div></div>'
       + '<div class="dash-hero-right"></div>';
@@ -63,7 +63,7 @@ function renderDashboardGuest() {
       + '<div class="landing-feature-card"><span class="lfc-icon">🤖</span><h3>多模型路由</h3><p>集成了可灵Kling、通义万相、Atlas Cloud，智能故障转移，确保生成成功</p></div>'
       + '<div class="landing-feature-card"><span class="lfc-icon">📦</span><h3>25+电商模板</h3><p>覆盖服装、美妆、食品、3C数码、家居、母婴等行业，一键套用专业营销文案</p></div>'
       + '<div class="landing-feature-card"><span class="lfc-icon">📤</span><h3>多平台适配</h3><p>自动生成9:16(抖音)/16:9(YouTube)/1:1(淘宝)/3:4(小红书)多尺寸版本</p></div>'
-      + '<div class="landing-feature-card"><span class="lfc-icon">⭐</span><h3>积分制付费</h3><p>免费版每月5条，个人版99元/50条，专业版499元/300条，灵活选择</p></div>'
+      + '<div class="landing-feature-card"><span class="lfc-icon">⭐</span><h3>积分制付费</h3><p>免费版每月5积分，个人版199元/80积分，专业版599元/300积分，用多少扣多少</p></div>'
       + '<div class="landing-feature-card"><span class="lfc-icon">🎭</span><h3>短剧工作台</h3><p>多场景批量生成，角色库+场景库，适合剧情类营销内容创作</p></div>'
       + '</div>';
   }
@@ -72,7 +72,7 @@ function renderDashboardGuest() {
     recent.innerHTML =
       '<div style="text-align:center;padding:40px 16px;color:var(--text-secondary);">'
       + '<div style="font-size:36px;margin-bottom:8px;">🎬</div>'
-      + '<p style="font-size:14px;margin-bottom:12px;">注册即送 10 积分，免费体验 AI 视频生成</p>'
+      + '<p style="font-size:14px;margin-bottom:12px;">注册即送 5 积分，免费体验 AI 视频生成</p>'
       + '<button class="btn btn-primary" onclick="showAuthModal(\'register\')">免费注册，开始创作</button></div>';
   }
   var actions = document.getElementById('dashHeroActions');

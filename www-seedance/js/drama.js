@@ -78,8 +78,8 @@ async function dramaBatchGen() {
   if (!S.key && S.provider === 'atlas') { toast('请先在设置中配置 API Key', 'error'); toggleSettings(); return; }
   var invalid = DR.scenes.filter(function(s) { return !s.desc.trim(); });
   if (invalid.length) { toast('请填写所有场景描述', 'error'); return; }
-  if (AUTH.balance < 10) { toast('积分不足，请先充值', 'error'); rechargeModal(); return; }
-  if (AUTH.balance < DR.scenes.length * 36) { toast('积分不足！需要 ' + DR.scenes.length * 36 + ' 分', 'error'); return; }
+  if (AUTH.balance < 1) { toast('积分不足，请先充值', 'error'); rechargeModal(); return; }
+  if (AUTH.balance < DR.scenes.length * 1) { toast('积分不足！需要 ' + DR.scenes.length + ' 分', 'error'); return; }
 
   DR.generating = true; DR.results = [];
   dramaRenderAll();

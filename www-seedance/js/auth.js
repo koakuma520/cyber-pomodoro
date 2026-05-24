@@ -190,7 +190,7 @@ async function showUpgradeModal() {
         + (isCurrent ? '<div style="font-size:10px;color:var(--success);margin-bottom:4px;">✅ 当前套餐</div>' : '')
         + '<div class="plan-name">' + p.name + '</div>'
         + '<div class="plan-price">' + (p.price === 0 ? '免费' : '¥' + p.price) + '<span class="unit">/月</span></div>'
-        + '<div class="plan-feature">' + p.videosPerMonth + ' 条视频/月</div>'
+        + '<div class="plan-feature">' + (p.creditsPerMonth || p.videosPerMonth) + ' 积分/月</div>'
         + '<div class="plan-feature">' + (p.watermark ? '带水印' : '无水印') + '</div>'
         + (p.desc ? '<div class="plan-feature">' + p.desc + '</div>' : '')
         + '</div>';

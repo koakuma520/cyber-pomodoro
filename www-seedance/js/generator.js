@@ -15,20 +15,15 @@ async function generate() {
   var prompt = document.getElementById('promptInput').value.trim();
   if (!prompt) { toast('请输入提示词', 'error'); return; }
 
-  // 4. 检查配额和积分
+  // 4. 刷新积分余额
   try { quotaData = await apiGet('/api/user/quota'); updateBalanceUI(); } catch (e) {}
-  if (quotaData && quotaData.remaining <= 0) {
-    toast('本月额度已用完！请升级套餐', 'error');
-    setTimeout(function() { showUpgradeModal(); }, 1000);
-    return;
-  }
-  if (AUTH.balance < 36) {
-    toast('积分不足！当前 ' + AUTH.balance + ' 分，需 36 分/次，请充值', 'error');
+  if (AUTH.balance < 1) {
+    toast('积分不足！当前 ' + AUTH.balance + ' 分，快速模式需 1 分/次，请充值', 'error');
     setTimeout(function() { rechargeModal(); }, 500);
     return;
   }
 
-  var cost = C.CREDIT[S.model] || 36;
+  var cost = C.CREDIT[S.model] || 1;
   var isCompare = S.compare && document.getElementById('compareToggle').checked;
 
   if (isCompare && AUTH.balance < cost * 2) { toast('对比模式需 ' + (cost * 2) + ' 积分，当前 ' + AUTH.balance + ' 分', 'error'); rechargeModal(); return; }
@@ -465,7 +460,7 @@ function fillPrompt(text) {
 }
 
 function updateCost() {
-  var credits = C.CREDIT[S.model] || 36;
+  var credits = C.CREDIT[S.model] || 1;
   var isCompare = S.compare && document.getElementById('compareToggle')?.checked;
   var total = isCompare ? credits * 2 : credits;
   var cn = document.getElementById('costNum');
@@ -490,7 +485,7 @@ function updateGenBtn(state) {
     case 'queued': btn.innerHTML = '<span class="spinner-btn"></span> 排队中...'; btn.className += ' queued'; btn.disabled = true; break;
     case 'processing': btn.innerHTML = '<span class="spinner-btn"></span> 生成中...'; btn.className += ' processing'; btn.disabled = true; break;
     case 'done': btn.innerHTML = '<span class="gen-btn-icon">✅</span><span class="gen-btn-text">完成！查看结果</span>'; btn.className += ' done'; btn.onclick = function() { document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' }); }; break;
-    default: btn.innerHTML = '<span class="gen-btn-icon">🚀</span><span class="gen-btn-text">开始生成视频</span><span class="gen-btn-cost">约 <span id="costNum">36 积分</span></span>'; btn.onclick = generate;
+    default: btn.innerHTML = '<span class="gen-btn-icon">🚀</span><span class="gen-btn-text">开始生成视频</span><span class="gen-btn-cost">约 <span id="costNum">1 积分</span></span>'; btn.onclick = generate;
   }
 }
 

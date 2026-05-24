@@ -25,6 +25,7 @@ const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
 const ATLAS_API_BASE = 'api.atlascloud.ai';
 const FRONTEND_DIR = path.join(__dirname, 'www-seedance');
 const DATA_DIR = path.join(__dirname, 'server', 'data');
+const GEN_COST = { fast: 1, standard: 2 };
 
 // ── 可选：微信 SDK（环境变量未设置时自动跳过） ──
 let wechatRouter = null;
@@ -54,23 +55,23 @@ function seedAll() {
     const adminHash = bcrypt.hashSync(ADMIN_PASS, BCRYPT_ROUNDS);
     const testHash = bcrypt.hashSync('123456', BCRYPT_ROUNDS);
     users = [
-      { id: 'seed-admin-001', username: ADMIN_USER, passwordHash: adminHash, balance: 200, plan: 'pro', isAdmin: true, createdAt: new Date().toISOString() },
-      { id: 'seed-test-001', username: 'test', passwordHash: testHash, balance: 100, plan: 'personal', isAdmin: false, createdAt: new Date().toISOString() }
+      { id: 'seed-admin-001', username: ADMIN_USER, passwordHash: adminHash, balance: 50, plan: 'pro', isAdmin: true, createdAt: new Date().toISOString() },
+      { id: 'seed-test-001', username: 'test', passwordHash: testHash, balance: 10, plan: 'personal', isAdmin: false, createdAt: new Date().toISOString() }
     ];
     saveDB('users.json', users);
     saveDB('transactions.json', [
-      { id: 'txn-seed-1', userId: 'seed-admin-001', type: 'claim', amount: 200, desc: '管理员初始积分', balance: 200, createdAt: new Date().toISOString() },
-      { id: 'txn-seed-2', userId: 'seed-test-001', type: 'claim', amount: 100, desc: '测试账号初始积分', balance: 100, createdAt: new Date().toISOString() }
+      { id: 'txn-seed-1', userId: 'seed-admin-001', type: 'claim', amount: 50, desc: '管理员初始积分', balance: 50, createdAt: new Date().toISOString() },
+      { id: 'txn-seed-2', userId: 'seed-test-001', type: 'claim', amount: 10, desc: '测试账号初始积分', balance: 10, createdAt: new Date().toISOString() }
     ]);
     console.log('  [Seed] 初始账号: admin/' + ADMIN_PASS + '  test/123456');
   }
   let plans = loadDB('plans.json');
   if (plans.length === 0) {
     plans = [
-      { id: 'free', name: '免费版', price: 0, videosPerMonth: 5, watermark: true, desc: '体验 AI 视频生成' },
-      { id: 'personal', name: '个人版', price: 99, videosPerMonth: 50, watermark: false, desc: '适合个体卖家' },
-      { id: 'pro', name: '专业版', price: 499, videosPerMonth: 300, watermark: false, desc: '适合中小卖家' },
-      { id: 'enterprise', name: '企业版', price: 1999, videosPerMonth: 1500, watermark: false, desc: '大卖家/MCN/API' }
+      { id: 'free', name: '免费版', price: 0, creditsPerMonth: 5, watermark: true, desc: '每月5积分，体验AI视频生成' },
+      { id: 'personal', name: '个人版', price: 199, creditsPerMonth: 80, watermark: false, desc: '￥2.5/条，适合个体卖家' },
+      { id: 'pro', name: '专业版', price: 599, creditsPerMonth: 300, watermark: false, desc: '￥2.0/条，适合中小卖家' },
+      { id: 'enterprise', name: '企业版', price: 2499, creditsPerMonth: 1500, watermark: false, desc: '￥1.7/条，大卖家/MCN/API' }
     ];
     saveDB('plans.json', plans);
   }
@@ -144,11 +145,11 @@ app.post('/api/auth/register', async (req, res) => {
     if (password.length < 4) return res.status(400).json({ error: '密码至少4个字符' });
     const users = loadDB('users.json');
     if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) return res.status(409).json({ error: '用户名已存在' });
-    const user = { id: crypto.randomUUID(), username, passwordHash: await bcrypt.hash(password, BCRYPT_ROUNDS), balance: 10, plan: 'free', isAdmin: false, createdAt: new Date().toISOString() };
+    const user = { id: crypto.randomUUID(), username, passwordHash: await bcrypt.hash(password, BCRYPT_ROUNDS), balance: 5, plan: 'free', isAdmin: false, createdAt: new Date().toISOString() };
     users.push(user);
     saveDB('users.json', users);
     const txns = loadDB('transactions.json');
-    txns.push({ id: crypto.randomUUID(), userId: user.id, type: 'claim', amount: 10, desc: '新用户注册赠送', balance: 10, createdAt: new Date().toISOString() });
+    txns.push({ id: crypto.randomUUID(), userId: user.id, type: 'claim', amount: 5, desc: '新用户注册赠送', balance: 5, createdAt: new Date().toISOString() });
     saveDB('transactions.json', txns);
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
     const { passwordHash: _, ...safe } = user;
@@ -183,7 +184,7 @@ app.post('/api/user/recharge', authMiddleware, adminMiddleware, (req, res) => {
   const users = loadDB('users.json');
   const idx = users.findIndex(u => u.id === targetId);
   if (idx < 0) return res.status(404).json({ error: '用户不存在' });
-  const credits = yuan * 10;
+  const credits = yuan * 5;
   users[idx].balance += credits;
   saveDB('users.json', users);
   const txns = loadDB('transactions.json');
@@ -199,11 +200,11 @@ app.post('/api/user/claim-free', authMiddleware, (req, res) => {
     return res.status(400).json({ error: '今天已领取过' });
   const users = loadDB('users.json');
   const idx = users.findIndex(u => u.id === req.user.id);
-  users[idx].balance += 10;
+  users[idx].balance += 2;
   saveDB('users.json', users);
-  txns.push({ id: crypto.randomUUID(), userId: req.user.id, type: 'claim', amount: 10, desc: '每日免费领取', balance: users[idx].balance, createdAt: new Date().toISOString() });
+  txns.push({ id: crypto.randomUUID(), userId: req.user.id, type: 'claim', amount: 2, desc: '每日免费领取', balance: users[idx].balance, createdAt: new Date().toISOString() });
   saveDB('transactions.json', txns);
-  res.json({ balance: users[idx].balance, message: '领取成功 +10积分' });
+  res.json({ balance: users[idx].balance, message: '领取成功 +2积分' });
 });
 
 app.get('/api/user/transactions', authMiddleware, (req, res) => {
@@ -231,10 +232,11 @@ app.get('/api/dashboard', authMiddleware, (req, res) => {
   const successCount = history.filter(h => h.status === 'done').length;
   const failCount = history.filter(h => h.status === 'failed').length;
   const totalTasks = successCount + failCount;
+  const monthlyLimit = plan.creditsPerMonth || plan.videosPerMonth || 0;
   res.json({
     stats: {
-      totalGenerations, thisMonthGenerations, remainingQuota: Math.max(0, plan.videosPerMonth - thisMonthGenerations),
-      quotaLimit: plan.videosPerMonth, balance: req.user.balance, plan: plan.name,
+      totalGenerations, thisMonthGenerations, remainingQuota: Math.max(0, monthlyLimit - thisMonthGenerations),
+      quotaLimit: monthlyLimit, balance: req.user.balance, plan: plan.name,
       totalConsumed, successRate: totalTasks > 0 ? Math.round(successCount / totalTasks * 100) : 0
     },
     recentWorks: history.slice(0, 4).map(h => ({ id: h.id, prompt: h.prompt, videoUrl: h.videoUrl, cost: h.cost, status: h.status, createdAt: h.createdAt })),
@@ -255,7 +257,8 @@ app.get('/api/user/quota', authMiddleware, (req, res) => {
   const plan = plans.find(p => p.id === (req.user.plan || 'free')) || plans[0];
   const monthKey = new Date().toISOString().slice(0, 7);
   const used = loadDB('video_usage.json').filter(u => u.userId === req.user.id && u.month === monthKey).length;
-  res.json({ used, limit: plan.videosPerMonth, remaining: Math.max(0, plan.videosPerMonth - used), plan });
+  const limit = plan.creditsPerMonth || plan.videosPerMonth || 0;
+  res.json({ used, limit, remaining: Math.max(0, limit - used), plan });
 });
 
 function checkQuota(user) {
@@ -264,7 +267,8 @@ function checkQuota(user) {
   const plan = plans.find(p => p.id === (user.plan || 'free')) || plans[0];
   const monthKey = new Date().toISOString().slice(0, 7);
   const used = loadDB('video_usage.json').filter(u => u.userId === user.id && u.month === monthKey).length;
-  return { allowed: used < plan.videosPerMonth, used, limit: plan.videosPerMonth, remaining: Math.max(0, plan.videosPerMonth - used), plan };
+  const limit = plan.creditsPerMonth || plan.videosPerMonth || 0;
+  return { allowed: used < limit, used, limit, remaining: Math.max(0, limit - used), plan };
 }
 
 function recordUsage(userId) {
@@ -273,14 +277,37 @@ function recordUsage(userId) {
   saveDB('video_usage.json', usage);
 }
 
+function renewMonthlyCredits(user) {
+  if (!user.plan || user.plan === 'free') return 0;
+  const plans = loadDB('plans.json');
+  const plan = plans.find(p => p.id === user.plan);
+  if (!plan || plan.price <= 0) return 0;
+  const monthKey = new Date().toISOString().slice(0, 7);
+  if (user.creditMonth === monthKey) return 0; // 本月已续期
+  const monthlyCredits = plan.creditsPerMonth || plan.videosPerMonth || 0;
+  if (monthlyCredits <= 0) return 0;
+  const users = loadDB('users.json');
+  const idx = users.findIndex(u => u.id === user.id);
+  if (idx < 0) return 0;
+  users[idx].balance += monthlyCredits;
+  users[idx].creditMonth = monthKey;
+  saveDB('users.json', users);
+  const txns = loadDB('transactions.json');
+  txns.push({ id: crypto.randomUUID(), userId: user.id, type: 'monthly_renew', amount: monthlyCredits, desc: '月度积分续期: ' + plan.name, balance: users[idx].balance, createdAt: new Date().toISOString() });
+  saveDB('transactions.json', txns);
+  user.balance = users[idx].balance;
+  user.creditMonth = monthKey;
+  return monthlyCredits;
+}
+
 // ==================== 支付 API ====================
 // 获取充值产品列表
 app.get('/api/recharge-products', (req, res) => {
   res.json([
-    { id: 'r10', name: '100 积分', amount: 10, credits: 100, desc: '适合试用', icon: '⭐' },
-    { id: 'r50', name: '500 积分', amount: 50, credits: 550, desc: '加赠50分', icon: '💎' },
-    { id: 'r100', name: '1000 积分', amount: 100, credits: 1100, desc: '加赠100分，推荐', icon: '👑' },
-    { id: 'r500', name: '5000 积分', amount: 500, credits: 6000, desc: '加赠1000分，超值', icon: '🚀' }
+    { id: 'r10', name: '3 积分', amount: 10, credits: 3, desc: '￥3.3/分，小量试用', icon: '⭐' },
+    { id: 'r50', name: '20 积分', amount: 50, credits: 20, desc: '￥2.5/分，灵活补充', icon: '💎' },
+    { id: 'r100', name: '48 积分', amount: 100, credits: 48, desc: '加赠8分，￥2.1/分', icon: '👑' },
+    { id: 'r500', name: '250 积分', amount: 500, credits: 250, desc: '加赠50分，￥2.0/分', icon: '🚀' }
   ]);
 });
 
@@ -305,10 +332,10 @@ app.post('/api/orders', authMiddleware, (req, res) => {
 // 创建充值订单
 app.post('/api/recharge-orders', authMiddleware, (req, res) => {
   const products = [
-    { id: 'r10', amount: 10, credits: 100 },
-    { id: 'r50', amount: 50, credits: 550 },
-    { id: 'r100', amount: 100, credits: 1100 },
-    { id: 'r500', amount: 500, credits: 6000 }
+    { id: 'r10', amount: 10, credits: 3 },
+    { id: 'r50', amount: 50, credits: 20 },
+    { id: 'r100', amount: 100, credits: 48 },
+    { id: 'r500', amount: 500, credits: 250 }
   ];
   const prod = products.find(p => p.id === req.body.productId);
   if (!prod) return res.status(400).json({ error: '无效充值产品' });
@@ -414,8 +441,14 @@ app.post('/api/admin/orders/:id/approve', authMiddleware, adminMiddleware, (req,
       res.json({ message: '充值已到账 +' + orders[idx].credits + ' 积分', balance: users[uidx].balance });
     } else {
       users[uidx].plan = orders[idx].plan;
+      const planDef = loadDB('plans.json').find(p => p.id === orders[idx].plan);
+      const planCredits = planDef ? (planDef.creditsPerMonth || 0) : 0;
+      users[uidx].balance += planCredits;
       saveDB('users.json', users);
-      res.json({ message: '套餐已激活：' + orders[idx].plan, plan: orders[idx].plan });
+      const txns = loadDB('transactions.json');
+      txns.push({ id: crypto.randomUUID(), userId: users[uidx].id, type: 'plan_activate', amount: planCredits, desc: '套餐激活: ' + planDef.name + '，赠送月度积分', balance: users[uidx].balance, createdAt: new Date().toISOString() });
+      saveDB('transactions.json', txns);
+      res.json({ message: '套餐已激活：' + orders[idx].plan + '，赠送' + planCredits + '积分', plan: orders[idx].plan, credits: planCredits });
     }
   } else {
     res.json({ message: '订单已批准' });
@@ -810,10 +843,10 @@ app.all('/api/v1/*', (req, res) => {
 
 // 视频生成（带配额和积分检查 + 多模型路由）
 app.post('/api/generate', authMiddleware, (req, res) => {
-  const quota = checkQuota(req.user);
-  if (!quota.allowed) return res.status(402).json({ error: '本月额度已用完，请升级套餐', quota });
-  const cost = req.body.compare ? 72 : 36;
-  if (req.user.balance < cost) return res.status(402).json({ error: '积分不足', balance: req.user.balance, cost });
+  renewMonthlyCredits(req.user);
+  const modelCost = GEN_COST[req.body.model] || 1;
+  const cost = req.body.compare ? modelCost * 2 : modelCost;
+  if (req.user.balance < cost) return res.status(402).json({ error: '积分不足', balance: req.user.balance, cost, quota: checkQuota(req.user) });
   const users = loadDB('users.json');
   const uidx = users.findIndex(u => u.id === req.user.id);
   users[uidx].balance -= cost;
@@ -995,9 +1028,9 @@ function apiKeyAuth(req, res, next) {
 
 app.post('/api/v1/video/generate', apiKeyAuth, (req, res) => {
   req.user = req.apiKeyOwner;
-  const quota = checkQuota(req.apiKeyOwner);
-  if (!quota.allowed) return res.status(402).json({ error: '本月额度已用完，请升级套餐', quota });
-  const cost = 36;
+  renewMonthlyCredits(req.apiKeyOwner);
+  const modelCost = GEN_COST[req.body.model] || 1;
+  const cost = req.body.compare ? modelCost * 2 : modelCost;
   if (req.apiKeyOwner.balance < cost) return res.status(402).json({ error: '积分不足', balance: req.apiKeyOwner.balance, cost });
   const users = loadDB('users.json');
   const uidx = users.findIndex(u => u.id === req.apiKeyOwner.id);

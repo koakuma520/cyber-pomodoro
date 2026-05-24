@@ -39,7 +39,7 @@
       <input type="text" id="loginUsername" placeholder="用户名" class="auth-input">
       <input type="password" id="loginPassword" placeholder="密码" class="auth-input" style="margin-top:10px;">
       <button class="btn btn-primary w-full" onclick="doLogin()" style="margin-top:12px;height:44px;">登录</button>
-      <p class="auth-hint">新用户注册即送 10 积分</p>
+      <p class="auth-hint">新用户注册即送 5 积分</p>
     </div>
   </div>
 </div>
@@ -169,7 +169,7 @@
             <button class="segment active" data-model="fast" onclick="pickModel(this,'fast')">Fast</button>
             <button class="segment" data-model="standard" onclick="pickModel(this,'standard')">Pro</button>
           </div>
-          <div class="quality-price" id="qualityPrice">36 积分/次</div>
+          <div class="quality-price" id="qualityPrice">1 积分/次</div>
         </div>
 
         <!-- Parameters -->
@@ -342,7 +342,7 @@
         <button class="generate-btn" id="genBtn" onclick="generate()">
           <span class="gen-btn-icon">🚀</span>
           <span class="gen-btn-text">开始生成视频</span>
-          <span class="gen-btn-cost" id="costDisplay">约 <span id="costNum">36 积分</span></span>
+          <span class="gen-btn-cost" id="costDisplay">约 <span id="costNum">1 积分</span></span>
         </button>
       </main>
 
@@ -565,7 +565,7 @@
   <div class="modal-content" style="max-width:560px;">
     <div class="modal-header"><h2>💎 充值积分</h2><button class="modal-close" onclick="closeRechargeModal()">✕</button></div>
     <div class="modal-body">
-      <p class="text-muted text-sm" style="margin-bottom:16px;">1元 = 10积分，充值后可用于生成视频。大额充值享额外赠送。</p>
+      <p class="text-muted text-sm" style="margin-bottom:16px;">1元起充，套餐月费更划算。积分可用于生成视频，大额充值享额外赠送。</p>
       <div class="recharge-grid" id="rechargeGrid"></div>
       <p class="text-muted text-xs mt-8">流程：选择金额 → 创建订单 → 微信扫码支付 → 输入交易号 → 管理员验证到账</p>
     </div>
