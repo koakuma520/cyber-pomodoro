@@ -2,24 +2,37 @@
 var ALL_HISTORY = [];
 
 async function generate() {
-  if (!S.key) { toast('请先配置 API Key', 'error'); document.getElementById('apiKeyInput').focus(); return; }
+  // 1. 检查登录
+  if (!AUTH.token) {
+    toast('请先注册/登录后再生成视频', 'error');
+    showAuthModal('login');
+    return;
+  }
+  // 2. 检查 API Key（仅 Atlas）
+  if (!S.key && S.provider === 'atlas') { toast('请先在设置中配置 API Key', 'error'); toggleSettings(); return; }
+  // 3. 检查提示词
   document.getElementById('errorBox').classList.remove('show');
   var prompt = document.getElementById('promptInput').value.trim();
   if (!prompt) { toast('请输入提示词', 'error'); return; }
 
-  // 检查配额
-  if (AUTH.token) {
-    try { quotaData = await apiGet('/api/user/quota'); updateBalanceUI(); } catch (e) {}
-    if (quotaData && !quotaData.allowed) {
-      toast('本月额度已用完！请升级套餐', 'error');
-      setTimeout(function() { showUpgradeModal(); }, 1000);
-      return;
-    }
-    if (AUTH.balance < 36) { toast('积分不足！当前 ' + AUTH.balance + ' 分，需 36 分', 'error'); return; }
+  // 4. 检查配额和积分
+  try { quotaData = await apiGet('/api/user/quota'); updateBalanceUI(); } catch (e) {}
+  if (quotaData && quotaData.remaining <= 0) {
+    toast('本月额度已用完！请升级套餐', 'error');
+    setTimeout(function() { showUpgradeModal(); }, 1000);
+    return;
+  }
+  if (AUTH.balance < 36) {
+    toast('积分不足！当前 ' + AUTH.balance + ' 分，需 36 分/次，请充值', 'error');
+    setTimeout(function() { rechargeModal(); }, 500);
+    return;
   }
 
+  var cost = Math.round(parseInt(document.getElementById('duration').value) * C.PRICE[S.model]);
   var isCompare = S.compare && document.getElementById('compareToggle').checked;
-  if (isCompare && AUTH.balance < 72) { toast('对比模式需 72 积分', 'error'); return; }
+
+  if (isCompare && AUTH.balance < cost * 2) { toast('对比模式需 ' + (cost * 2) + ' 积分，当前 ' + AUTH.balance + ' 分', 'error'); rechargeModal(); return; }
+  S._lastCost = isCompare ? cost * 2 : cost;
 
   // UI 准备
   document.getElementById('progSection').classList.add('active');
@@ -64,7 +77,7 @@ async function generate() {
     if (isCompare) {
       var seed2 = document.getElementById('seedInput2').value.trim();
       var dur2 = document.getElementById('duration2').value;
-      if (!seed2 && !dur2) seed2 = Math.floor(Math.random() * 2147483647).toString();
+      if (!seed2) seed2 = Math.floor(Math.random() * 2147483647).toString();
       var body1 = buildReq(seed1, null);
       var body2 = buildReq(seed2, dur2 || null);
       body1.compare = body2.compare = true;
@@ -118,6 +131,20 @@ async function generate() {
   }
 }
 
+function cancelGeneration() {
+  if (!S.polling) return;
+  S.polling = false;
+  clearTimeout(S.pollTimer);
+  S.tasks[0].done = true; S.tasks[1].done = true;
+  clearTimeout(S.tasks[0].pollTimer); clearTimeout(S.tasks[1].pollTimer);
+  document.getElementById('progSection').classList.remove('active');
+  document.getElementById('progDual').style.display = 'none';
+  document.getElementById('progSingle').style.display = 'block';
+  updateGenBtn('ready'); setStat('ready');
+  var sp = document.getElementById('progSpinner'); if (sp) sp.style.display = 'none';
+  toast('已取消生成', 'info');
+}
+
 // Single Poll
 function startPoll(id, provider) {
   if (S.polling) return;
@@ -159,7 +186,7 @@ function startPoll(id, provider) {
         setStat('ready');
         // 保存历史
         if (AUTH.token && url) {
-          try { await apiPost('/api/history', { mode: S.mode, prompt: S.prompt, videoUrl: url, status: 'done', cost: 36 }); } catch (e) {}
+          try { await apiPost('/api/history', { mode: S.mode, prompt: S.prompt, videoUrl: url, status: 'done', cost: S._lastCost || 36 }); } catch (e) {}
           loadHist();
         }
       } else if (['failed', 'error'].includes(stat)) {
@@ -168,7 +195,7 @@ function startPoll(id, provider) {
         var em = t.error || t.message || '生成失败';
         showErr(em); toast('生成失败: ' + friendlyErr(em), 'error');
         if (AUTH.token) {
-          try { await apiPost('/api/history', { mode: S.mode, prompt: S.prompt, videoUrl: '', status: 'fail', cost: 36 }); } catch (e) {}
+          try { await apiPost('/api/history', { mode: S.mode, prompt: S.prompt, videoUrl: '', status: 'fail', cost: S._lastCost || 36 }); } catch (e) {}
           loadHist();
         }
       }
@@ -208,7 +235,7 @@ function checkDualDone() {
     setStat('ready'); updateGenBtn('done');
     showDualResult(S.tasks[0].url, S.tasks[1].url);
     if (AUTH.token) {
-      apiPost('/api/history', { mode: S.mode, prompt: S.prompt, videoUrl: S.tasks[0].url + '|' + S.tasks[1].url, status: 'done', cost: 72 }).catch(function() {});
+      apiPost('/api/history', { mode: S.mode, prompt: S.prompt, videoUrl: S.tasks[0].url + '|' + S.tasks[1].url, status: 'done', cost: S._lastCost || 72 }).catch(function() {});
       loadHist();
     }
   }
@@ -220,17 +247,19 @@ function showResult(url) {
   vs.classList.add('active');
   document.getElementById('resultVideo').src = url;
   document.getElementById('compareResult').style.display = 'none';
-  document.querySelector('.video-wrapper').style.display = '';
+  var vp = document.querySelector('.video-player');
+  if (vp) vp.style.display = '';
 }
 
 function showDualResult(url1, url2) {
   var vs = document.getElementById('resultSection');
   vs.classList.add('active');
-  document.querySelector('.video-wrapper').style.display = 'none';
+  var vp = document.querySelector('.video-player');
+  if (vp) vp.style.display = 'none';
   var cr = document.getElementById('compareResult');
   cr.style.display = 'grid';
-  cr.innerHTML = '<div><div class="compare-label">版本 1</div><div class="video-wrapper"><video controls src="' + url1 + '"></video></div></div>'
-    + '<div><div class="compare-label">版本 2</div><div class="video-wrapper"><video controls src="' + url2 + '"></video></div></div>';
+  cr.innerHTML = '<div><div class="compare-label">版本 1</div><div class="video-wrapper"><video controls playsinline src="' + url1 + '"></video></div></div>'
+    + '<div><div class="compare-label">版本 2</div><div class="video-wrapper"><video controls playsinline src="' + url2 + '"></video></div></div>';
 }
 
 function showResultOverlay() {
@@ -249,6 +278,7 @@ function closeResultOverlay() {
 // History
 async function loadHist() {
   if (!AUTH.token) return;
+  _histPage = 10;
   try {
     var hist = await apiGet('/api/history');
     ALL_HISTORY = hist;
@@ -256,10 +286,12 @@ async function loadHist() {
   } catch (e) { /* ignore */ }
 }
 
+var _histPage = 10;
+
 function renderHistoryList(hist) {
   var list = document.getElementById('historyList');
   if (!list) return;
-  var items = hist.slice(0, 10);
+  var items = hist.slice(0, _histPage);
   if (items.length === 0) {
     list.innerHTML = '<div class="history-empty"><div class="empty-icon">📭</div><p>暂无生成记录</p></div>';
     return;
@@ -267,21 +299,31 @@ function renderHistoryList(hist) {
   var html = '';
   for (var i = 0; i < items.length; i++) {
     var h = items[i];
-    var thumbHtml = h.videoUrl ? '<video src="' + h.videoUrl + '" muted preload="metadata"></video>' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:16px;">🎬</div>';
+    var thumbHtml = h.videoUrl ? '<video src="' + h.videoUrl + '" muted preload="metadata" playsinline></video>' : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:16px;">🎬</div>';
     html += '<div class="history-item"><div class="h-thumb" onclick="playHistVideo(\'' + escHtml(h.videoUrl || '') + '\')">' + thumbHtml + '<div class="h-play">▶</div></div>'
       + '<div class="h-info" onclick="playHistVideo(\'' + escHtml(h.videoUrl || '') + '\')"><div class="h-prompt">' + escHtml(h.prompt || '(无提示词)') + '</div>'
       + '<div class="h-meta"><span>' + (h.mode || 'text') + '</span><span>' + (h.cost || 36) + '分</span>'
       + (h.createdAt ? '<span>' + new Date(h.createdAt).toLocaleDateString('zh-CN') + '</span>' : '') + '</div></div>'
-      + '<span class="h-badge ' + (h.status === 'done' ? 'done' : 'fail') + '">' + (h.status === 'done' ? '完成' : '失败') + '</span></div>';
+      + '<span class="h-badge ' + (h.status === 'done' ? 'done' : 'fail') + '">' + (h.status === 'done' ? '完成' : '失败') + '</span>'
+      + '<button class="h-copy-btn" title="复制提示词" onclick="event.stopPropagation();copyHistPrompt(\'' + escHtml(h.prompt || '') + '\')">📋</button></div>';
+  }
+  if (hist.length > _histPage) {
+    html += '<div style="text-align:center;padding:8px;"><button class="btn btn-xs btn-link" onclick="_histPage+=10;renderHistoryList(ALL_HISTORY);">显示更多 (' + (hist.length - _histPage) + ' 条剩余)</button></div>';
   }
   list.innerHTML = html;
+}
+
+function copyHistPrompt(prompt) {
+  if (!prompt) return;
+  navigator.clipboard.writeText(prompt).then(function() { toast('提示词已复制', 'success'); }).catch(function() { toast('复制失败', 'error'); });
 }
 
 function playHistVideo(url) {
   if (!url) return;
   document.getElementById('resultVideo').src = url;
   document.getElementById('resultSection').classList.add('active');
-  document.querySelector('.video-wrapper').style.display = '';
+  var vp = document.querySelector('.video-player');
+  if (vp) vp.style.display = '';
   document.getElementById('compareResult').style.display = 'none';
   document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
 }
@@ -293,7 +335,7 @@ function showWorksModal() {
   var html = '';
   for (var i = 0; i < ALL_HISTORY.length; i++) {
     var h = ALL_HISTORY[i];
-    html += '<div class="work-card"><video src="' + (h.videoUrl || '') + '" muted preload="metadata"></video>'
+    html += '<div class="work-card"><video src="' + (h.videoUrl || '') + '" muted preload="metadata" playsinline></video>'
       + '<div class="work-info"><div class="w-prompt">' + escHtml(h.prompt || '') + '</div><div class="w-meta">' + (h.createdAt ? new Date(h.createdAt).toLocaleString('zh-CN') : '') + '</div></div>'
       + '<div class="work-actions"><button class="btn btn-xs" onclick="playHistVideo(\'' + escHtml(h.videoUrl || '') + '\');closeWorksModal();">▶ 播放</button></div></div>';
   }
@@ -315,9 +357,24 @@ function filterWorks() {
   }
 }
 
-function downloadVideo() {
+async function downloadVideo() {
   var url = document.getElementById('resultVideo').src || S.videoUrl;
-  if (url) { var a = document.createElement('a'); a.href = url; a.download = 'seedance-video.mp4'; a.target = '_blank'; a.click(); }
+  if (!url) return;
+  try {
+    toast('正在下载...', 'info');
+    var r = await fetch(url);
+    if (!r.ok) throw new Error('fetch failed');
+    var blob = await r.blob();
+    var blobUrl = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = blobUrl; a.download = 'seedance-video.mp4';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(blobUrl);
+    toast('下载完成', 'success');
+  } catch (e) {
+    window.open(url, '_blank');
+    toast('已在新窗口打开，右键视频选择"另存为"', 'info');
+  }
 }
 
 function copyVideoLink() {
@@ -378,18 +435,18 @@ function clearImg(idx) {
 
 // Mode / Model / Compare
 function switchMode(el, m) {
-  document.querySelectorAll('.mode-pill').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.mode-tab').forEach(function(p) { p.classList.remove('active'); });
   el.classList.add('active'); S.mode = m;
-  var isDrama = m === 'drama';
   document.getElementById('imageGroup').style.display = m === 'image' ? 'block' : 'none';
-  document.getElementById('templateQuickBar').style.display = isDrama ? 'none' : '';
-  document.getElementById('genBtn').style.display = isDrama ? 'none' : '';
-  if (isDrama) { if (typeof dramaInit === 'function') dramaInit(); }
+  document.getElementById('templateQuickBar').style.display = m === 'image' ? '' : '';
+  document.getElementById('genBtn').style.display = '';
 }
 
 function pickModel(el, m) {
-  document.querySelectorAll('.model-pill').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('#qualitySegments .segment').forEach(function(p) { p.classList.remove('active'); });
   el.classList.add('active'); S.model = m; updateCost();
+  var priceEl = document.getElementById('qualityPrice');
+  if (priceEl) priceEl.textContent = '¥' + C.PRICE[m] + '/秒';
 }
 
 function toggleCompare() {
@@ -410,49 +467,59 @@ function fillPrompt(text) {
 function updateCost() {
   var dur = parseInt(document.getElementById('duration').value) || 5;
   var total = (dur * C.PRICE[S.model]).toFixed(1);
-  document.getElementById('costNum').textContent = '¥' + total;
-  document.querySelector('.cost-display .note').textContent = S.model === 'fast' ? '（Fast）' : '（Standard）';
-  var d = document.getElementById('costDisplay');
-  d.classList.remove('cost-animate'); void d.offsetWidth; d.classList.add('cost-animate');
+  var cn = document.getElementById('costNum');
+  if (cn) cn.textContent = '¥' + total;
+  var priceEl = document.getElementById('qualityPrice');
+  if (priceEl) priceEl.textContent = '¥' + C.PRICE[S.model] + '/秒';
 }
 
 function updateGenBtn(state) {
   var btn = document.getElementById('genBtn');
   if (!btn) return;
   btn.onclick = null; btn.disabled = false;
-  btn.className = 'btn btn-gen';
-  if (state === 'ready' && !S.key) {
-    btn.innerHTML = '🔒 请先配置 API 密钥';
-    btn.className += ' btn-nokey';
-    btn.onclick = function() { document.getElementById('apiKeyInput').focus(); };
+  btn.className = 'generate-btn';
+  if (state === 'ready' && !S.key && S.provider === 'atlas') {
+    btn.innerHTML = '<span class="gen-btn-icon">🔒</span><span class="gen-btn-text">请先配置 API 密钥</span>';
+    btn.className += ' nokey';
+    btn.onclick = function() { toggleSettings(); };
     return;
   }
   switch (state) {
-    case 'submit': btn.innerHTML = '<span class="spinner-btn"></span> 正在提交...'; btn.className += ' btn-processing'; btn.disabled = true; break;
-    case 'queued': btn.innerHTML = '<span class="spinner-btn"></span> 排队中...'; btn.className += ' btn-queued'; btn.disabled = true; break;
-    case 'processing': btn.innerHTML = '<span class="spinner-btn"></span> 生成中...'; btn.className += ' btn-processing'; btn.disabled = true; break;
-    case 'done': btn.textContent = '✅ 完成！查看结果'; btn.className += ' btn-done'; btn.onclick = function() { document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' }); }; break;
-    default: btn.innerHTML = '🚀 开始生成视频'; btn.className += ' btn-primary'; btn.onclick = generate;
+    case 'submit': btn.innerHTML = '<span class="spinner-btn"></span> 正在提交...'; btn.className += ' processing'; btn.disabled = true; break;
+    case 'queued': btn.innerHTML = '<span class="spinner-btn"></span> 排队中...'; btn.className += ' queued'; btn.disabled = true; break;
+    case 'processing': btn.innerHTML = '<span class="spinner-btn"></span> 生成中...'; btn.className += ' processing'; btn.disabled = true; break;
+    case 'done': btn.innerHTML = '<span class="gen-btn-icon">✅</span><span class="gen-btn-text">完成！查看结果</span>'; btn.className += ' done'; btn.onclick = function() { document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' }); }; break;
+    default: btn.innerHTML = '<span class="gen-btn-icon">🚀</span><span class="gen-btn-text">开始生成视频</span><span class="gen-btn-cost">约 ¥<span id="costNum">3.5</span></span>'; btn.onclick = generate;
   }
 }
 
 function saveKey() {
   var k = document.getElementById('apiKeyInput')?.value?.trim();
-  if (k) { S.key = k; setKeyStat(true); toast('API Key 已保存', 'success'); }
-  else { S.key = ''; setKeyStat(false); toast('请输入 API Key', 'error'); }
+  if (k) {
+    S.key = k;
+    try { localStorage.setItem(SK.API_KEY, JSON.stringify({ key: k, updatedAt: Date.now() })); } catch(e) {}
+    setKeyStat(true);
+    updateGenBtn('ready');
+    toast('API Key 已保存', 'success');
+    setTimeout(function() { closeSettings(); }, 800);
+  } else { S.key = ''; setKeyStat(false); toast('请输入有效的 API Key', 'error'); }
 }
 
 // Provider 选择
 function pickProvider(el, provider) {
-  document.querySelectorAll('#providerPills .model-pill').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.model-option').forEach(function(p) { p.classList.remove('active'); });
   el.classList.add('active');
   S.provider = provider;
-  updateCost();
-  if (provider !== 'atlas') {
-    document.getElementById('apiKeyInput').placeholder = provider === 'kling' ? '可灵不需要额外 Key（服务端已配置）' : '万相不需要额外 Key（服务端已配置）';
-  } else {
-    document.getElementById('apiKeyInput').placeholder = 'Atlas Cloud API Key';
+  updateProviderBadge(provider);
+  // 更新侧边栏徽章
+  var badge = document.getElementById('sidebarProviderBadge');
+  if (badge) { var names = { atlas: 'Atlas', kling: '可灵', wanxiang: '万相', auto: '自动' }; badge.textContent = names[provider] || 'Atlas'; }
+  // Atlas 需要用户填 Key，提示去设置页面
+  if (provider === 'atlas' && !S.key) {
+    var inp = document.getElementById('apiKeyInput');
+    if (inp) inp.placeholder = '粘贴你的 Atlas Cloud API Key';
   }
+  updateGenBtn('ready');
 }
 
 // 商品抓取
@@ -484,13 +551,26 @@ async function scrapeProduct() {
 function useScrapedData() {
   var d = window._scrapedData;
   if (!d) return;
-  var productName = d.title || '';
-  if (!d.autoFilled) {
-    productName = prompt('请输入商品名称:', productName) || productName;
-  }
-  var sellingPoints = prompt('请输入产品卖点（可选）:', '');
-  var prompt = '电商商品展示视频，产品：' + productName + '，精美展示，专业灯光，4K画质。' + (sellingPoints || '品质保证，值得信赖');
-  fillPrompt(prompt);
+  var resultDiv = document.getElementById('scrapeResult');
+  if (!resultDiv) return;
+  var name = d.title || '';
+  var html = '<div style="margin-top:10px;border-top:1px solid var(--border-light);padding-top:10px;">'
+    + '<label style="font-size:12px;color:var(--text-secondary);">产品名称</label>'
+    + '<input type="text" id="scrapeProductName" value="' + escHtml(name) + '" style="margin:4px 0 8px;font-size:13px;">'
+    + '<label style="font-size:12px;color:var(--text-secondary);">产品卖点 <span class="label-hint">可选</span></label>'
+    + '<input type="text" id="scrapeSellingPoints" placeholder="例如：限时特价、买二送一" style="margin:4px 0 8px;font-size:13px;">'
+    + '<div style="display:flex;gap:8px;margin-top:8px;">'
+    + '<button class="btn btn-secondary btn-small" onclick="document.getElementById(\'scrapeResult\').style.display=\'none\'">取消</button>'
+    + '<button class="btn btn-primary btn-small" onclick="confirmScrapedData()">📋 填入生成器</button></div></div>';
+  resultDiv.innerHTML += html;
+}
+
+function confirmScrapedData() {
+  var name = document.getElementById('scrapeProductName')?.value?.trim();
+  if (!name) { toast('请输入产品名称', 'error'); return; }
+  var sp = document.getElementById('scrapeSellingPoints')?.value?.trim() || '品质保证，值得信赖';
+  var text = '电商商品展示视频，产品：' + name + '，精美展示，专业灯光，4K画质。' + sp;
+  fillPrompt(text);
   document.getElementById('scrapeResult').style.display = 'none';
   toast('已从商品链接填入生成器', 'success');
 }

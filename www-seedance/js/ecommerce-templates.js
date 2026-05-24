@@ -12,9 +12,6 @@ var ECOM_TPL = [
   { id: 'tpl-social-proof', name: '买家秀合集', icon: '💬', industry: '通用', promptTemplate: '用户好评和实拍合集视频，多张{{product_name}}的真实使用照片轮播展示，五星好评动画，真实温暖的场景。{{selling_points}}', tips: '适合：服装、美妆' }
 ];
 
-// 渲染线程安全的模板加载
-var _tplLoaded = false;
-
 async function loadTemplates() {
   try {
     if (AUTH.token) {
@@ -23,7 +20,6 @@ async function loadTemplates() {
     }
   } catch (e) { /* 使用内置模板 */ }
   renderTemplateQuickBar();
-  _tplLoaded = true;
 }
 
 function renderTemplateQuickBar() {
@@ -55,34 +51,79 @@ function setupTemplateDelegation() {
 
 function useTemplate(tplId) {
   var tpl = ECOM_TPL.find(function(t) { return t.id === tplId; });
-  if (!tpl) { alert('模板未找到: ' + tplId); return; }
+  if (!tpl) { toast('模板未找到', 'error'); return; }
+  showTemplateForm(tpl);
+}
 
-  var productName = prompt('请输入产品名称:', '');
-  if (!productName) return;
+function showTemplateForm(tpl) {
+  var exist = document.getElementById('tplFormPanel');
+  if (exist) exist.remove();
 
-  var sellingPoints = prompt('请输入产品卖点（可选，如"买二送一、限时折扣"）:', '');
-  if (sellingPoints === null) sellingPoints = '';
+  var panel = document.createElement('div');
+  panel.id = 'tplFormPanel';
+  panel.className = 'tpl-form-panel';
+  panel.setAttribute('data-tpl-id', tpl.id);
+  panel.innerHTML = '<div class="tpl-form-header">'
+    + '<span>' + (tpl.icon || '📦') + ' ' + escHtml(tpl.name) + '</span>'
+    + '<button class="tpl-form-close" onclick="closeTemplateForm()">✕</button></div>'
+    + '<div class="tpl-form-body">'
+    + '<label>产品名称</label><input type="text" id="tplProductName" placeholder="例如：夏季新款连衣裙" oninput="previewTemplatePrompt()">'
+    + '<label>产品卖点 <span class="label-hint">可选</span></label><input type="text" id="tplSellingPoints" placeholder="例如：限时特价、买二送一" oninput="previewTemplatePrompt()">'
+    + '<label>生成预览</label><div class="tpl-preview" id="tplPreviewText"></div>'
+    + '<div class="tpl-form-actions"><button class="btn btn-secondary btn-small" onclick="closeTemplateForm()">取消</button>'
+    + '<button class="btn btn-primary btn-small" onclick="confirmTemplate(\'' + tpl.id + '\')">📋 填入生成器</button></div></div>';
 
+  var grid = document.getElementById('templateQuickGrid');
+  if (grid && grid.parentNode) {
+    grid.parentNode.insertBefore(panel, grid.nextSibling);
+  }
+  document.getElementById('tplProductName').focus();
+  previewTemplatePrompt();
+
+  // 确保在文生视频模式
+  if (S.mode !== 'text') {
+    var btn = document.querySelector('.mode-tab[data-mode="text"]');
+    if (btn) btn.click();
+  }
+}
+
+function previewTemplatePrompt() {
+  var tplId = document.getElementById('tplFormPanel')?.getAttribute('data-tpl-id') || '';
+  var tpl = ECOM_TPL.find(function(t) { return t.id === tplId; });
+  if (!tpl) return;
+  var name = document.getElementById('tplProductName')?.value || '{{product_name}}';
+  var sp = document.getElementById('tplSellingPoints')?.value || '品质保证，值得信赖';
   var text = (tpl.promptTemplate || '')
-    .replace(/\{\{product_name\}\}/g, productName)
-    .replace(/\{\{selling_points\}\}/g, sellingPoints || '品质保证，值得信赖');
+    .replace(/\{\{product_name\}\}/g, name || '{{product_name}}')
+    .replace(/\{\{selling_points\}\}/g, sp || '');
+  var preview = document.getElementById('tplPreviewText');
+  if (preview) preview.textContent = text;
+}
+
+function confirmTemplate(tplId) {
+  var tpl = ECOM_TPL.find(function(t) { return t.id === tplId; });
+  if (!tpl) return;
+  var name = document.getElementById('tplProductName')?.value?.trim();
+  if (!name) { toast('请输入产品名称', 'error'); return; }
+  var sp = document.getElementById('tplSellingPoints')?.value?.trim() || '品质保证，值得信赖';
+  var text = (tpl.promptTemplate || '')
+    .replace(/\{\{product_name\}\}/g, name)
+    .replace(/\{\{selling_points\}\}/g, sp);
 
   var inp = document.getElementById('promptInput');
   if (inp) {
     inp.value = text;
     document.getElementById('charCount').textContent = text.length;
     inp.focus();
-    // 滚动到 prompt 区域
     inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
-
-  // 确保在文生视频模式
-  if (S.mode !== 'text') {
-    var btn = document.querySelector('.mode-pill[data-mode="text"]');
-    if (btn) btn.click();
-  }
-
+  closeTemplateForm();
   toast('已填入「' + tpl.name + '」模板', 'success');
+}
+
+function closeTemplateForm() {
+  var el = document.getElementById('tplFormPanel');
+  if (el) el.remove();
 }
 
 // 页面加载后初始化事件委托

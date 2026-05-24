@@ -156,16 +156,19 @@ app.get('/api/user/profile', authMiddleware, (req, res) => {
   res.json(safe);
 });
 
-app.post('/api/user/recharge', authMiddleware, (req, res) => {
+// 管理后台快速充值（仅管理员，测试用）
+app.post('/api/user/recharge', authMiddleware, adminMiddleware, (req, res) => {
   const yuan = parseInt(req.body.amount);
   if (!yuan || yuan <= 0 || yuan > 10000) return res.status(400).json({ error: '充值金额无效 (1-10000元)' });
+  const targetId = req.body.targetUserId || req.user.id;
   const users = loadDB('users.json');
-  const idx = users.findIndex(u => u.id === req.user.id);
+  const idx = users.findIndex(u => u.id === targetId);
+  if (idx < 0) return res.status(404).json({ error: '用户不存在' });
   const credits = yuan * 10;
   users[idx].balance += credits;
   saveDB('users.json', users);
   const txns = loadDB('transactions.json');
-  txns.push({ id: crypto.randomUUID(), userId: req.user.id, type: 'recharge', amount: credits, desc: '充值 ' + yuan + ' 元', balance: users[idx].balance, createdAt: new Date().toISOString() });
+  txns.push({ id: crypto.randomUUID(), userId: targetId, type: 'recharge', amount: credits, desc: '管理员充值 ' + yuan + ' 元', balance: users[idx].balance, createdAt: new Date().toISOString() });
   saveDB('transactions.json', txns);
   res.json({ balance: users[idx].balance, message: '充值成功 +' + credits + '积分' });
 });
@@ -207,6 +210,7 @@ app.get('/api/user/quota', authMiddleware, (req, res) => {
 });
 
 function checkQuota(user) {
+  if (user.isAdmin) return { allowed: true, used: 0, limit: Infinity, remaining: Infinity, plan: { id: 'admin', name: '管理员免检' } };
   const plans = loadDB('plans.json');
   const plan = plans.find(p => p.id === (user.plan || 'free')) || plans[0];
   const monthKey = new Date().toISOString().slice(0, 7);
@@ -221,31 +225,88 @@ function recordUsage(userId) {
 }
 
 // ==================== 支付 API ====================
+// 获取充值产品列表
+app.get('/api/recharge-products', (req, res) => {
+  res.json([
+    { id: 'r10', name: '100 积分', amount: 10, credits: 100, desc: '适合试用', icon: '⭐' },
+    { id: 'r50', name: '500 积分', amount: 50, credits: 550, desc: '加赠50分', icon: '💎' },
+    { id: 'r100', name: '1000 积分', amount: 100, credits: 1100, desc: '加赠100分，推荐', icon: '👑' },
+    { id: 'r500', name: '5000 积分', amount: 500, credits: 6000, desc: '加赠1000分，超值', icon: '🚀' }
+  ]);
+});
+
+// 创建套餐订单
 app.post('/api/orders', authMiddleware, (req, res) => {
   const plans = loadDB('plans.json');
   const planDef = plans.find(p => p.id === req.body.plan);
   if (!planDef || planDef.price <= 0) return res.status(400).json({ error: '无效套餐' });
-  const order = { id: new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + crypto.randomUUID().slice(0, 4).toUpperCase(), userId: req.user.id, plan: req.body.plan, amount: planDef.price, status: 'pending', createdAt: new Date().toISOString() };
-  let orders = loadDB('orders.json');
-  orders.push(order);
-  saveDB('orders.json', orders);
-  res.json({ order, message: '请支付 ' + planDef.price + ' 元后输入交易号确认' });
+  const orders = loadDB('orders.json');
+  const dup = orders.find(o => o.userId === req.user.id && o.plan === req.body.plan && ['pending', 'pending_approval'].includes(o.status));
+  if (dup) return res.status(400).json({ error: '已有该套餐的待处理订单 ' + dup.id, orderId: dup.id });
+  const order = {
+    id: new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + crypto.randomUUID().slice(0, 4).toUpperCase(),
+    userId: req.user.id, type: 'plan', plan: req.body.plan, amount: planDef.price,
+    status: 'pending', note: req.body.note || '', createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 86400000).toISOString()
+  };
+  orders.push(order); saveDB('orders.json', orders);
+  res.json({ order, planName: planDef.name, message: '订单已创建' });
 });
 
+// 创建充值订单
+app.post('/api/recharge-orders', authMiddleware, (req, res) => {
+  const products = [
+    { id: 'r10', amount: 10, credits: 100 },
+    { id: 'r50', amount: 50, credits: 550 },
+    { id: 'r100', amount: 100, credits: 1100 },
+    { id: 'r500', amount: 500, credits: 6000 }
+  ];
+  const prod = products.find(p => p.id === req.body.productId);
+  if (!prod) return res.status(400).json({ error: '无效充值产品' });
+  const order = {
+    id: 'R' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + crypto.randomUUID().slice(0, 4).toUpperCase(),
+    userId: req.user.id, type: 'recharge', productId: prod.id, amount: prod.amount, credits: prod.credits,
+    status: 'pending', createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 86400000).toISOString()
+  };
+  let orders = loadDB('orders.json'); orders.push(order); saveDB('orders.json', orders);
+  res.json({ order, message: '充值订单已创建' });
+});
+
+// 提交支付凭证（套餐和充值通用）
 app.post('/api/orders/:id/verify', authMiddleware, (req, res) => {
   let orders = loadDB('orders.json');
   const idx = orders.findIndex(o => o.id === req.params.id && o.userId === req.user.id);
   if (idx < 0) return res.status(404).json({ error: '订单不存在' });
-  orders[idx].wechatTxnId = req.body.txn_id || '';
+  if (orders[idx].status !== 'pending') return res.status(400).json({ error: '订单状态异常：' + orders[idx].status });
+  if (!req.body.txn_id || req.body.txn_id.trim().length < 4)
+    return res.status(400).json({ error: '请输入有效的微信交易单号（至少4位）' });
+  orders[idx].wechatTxnId = req.body.txn_id.trim();
   orders[idx].status = 'pending_approval';
   orders[idx].submittedAt = new Date().toISOString();
   saveDB('orders.json', orders);
-  res.json({ status: 'pending_approval', message: '已提交，等待管理员验证' });
+  res.json({ status: 'pending_approval', message: '支付凭证已提交，等待管理员验证' });
 });
 
+// 取消订单
+app.post('/api/orders/:id/cancel', authMiddleware, (req, res) => {
+  let orders = loadDB('orders.json');
+  const idx = orders.findIndex(o => o.id === req.params.id && o.userId === req.user.id);
+  if (idx < 0) return res.status(404).json({ error: '订单不存在' });
+  if (!['pending', 'pending_approval'].includes(orders[idx].status))
+    return res.status(400).json({ error: '该状态不可取消' });
+  orders[idx].status = 'cancelled'; orders[idx].cancelledAt = new Date().toISOString();
+  saveDB('orders.json', orders);
+  res.json({ message: '订单已取消' });
+});
+
+// 用户订单列表
 app.get('/api/orders', authMiddleware, (req, res) => {
-  const orders = loadDB('orders.json').filter(o => o.userId === req.user.id);
-  res.json(orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+  const now = new Date().toISOString();
+  let orders = loadDB('orders.json');
+  let dirty = false;
+  for (const o of orders) { if (o.status === 'pending' && o.expiresAt && o.expiresAt < now) { o.status = 'expired'; dirty = true; } }
+  if (dirty) saveDB('orders.json', orders);
+  res.json(orders.filter(o => o.userId === req.user.id).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
 });
 
 // ==================== Admin API ====================
@@ -270,7 +331,19 @@ app.post('/api/admin/adjust-balance', authMiddleware, adminMiddleware, (req, res
 });
 
 app.get('/api/admin/orders', authMiddleware, adminMiddleware, (req, res) => {
-  res.json(loadDB('orders.json').sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+  const now = new Date().toISOString();
+  let orders = loadDB('orders.json');
+  let dirty = false;
+  for (const o of orders) { if (o.status === 'pending' && o.expiresAt && o.expiresAt < now) { o.status = 'expired'; dirty = true; } }
+  if (dirty) saveDB('orders.json', orders);
+  const users = loadDB('users.json');
+  const enriched = orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(o => {
+    const u = users.find(u => u.id === o.userId);
+    return { ...o, username: u ? u.username : '已删除' };
+  });
+  const q = (req.query.q || '').toLowerCase();
+  const filtered = q ? enriched.filter(o => o.id.toLowerCase().includes(q) || o.username.toLowerCase().includes(q) || (o.wechatTxnId || '').toLowerCase().includes(q)) : enriched;
+  res.json(filtered);
 });
 
 app.post('/api/admin/orders/:id/approve', authMiddleware, adminMiddleware, (req, res) => {
@@ -282,15 +355,31 @@ app.post('/api/admin/orders/:id/approve', authMiddleware, adminMiddleware, (req,
   saveDB('orders.json', orders);
   const users = loadDB('users.json');
   const uidx = users.findIndex(u => u.id === orders[idx].userId);
-  if (uidx >= 0) { users[uidx].plan = orders[idx].plan; saveDB('users.json', users); }
-  res.json({ message: '已批准并激活套餐', plan: orders[idx].plan });
+  if (uidx >= 0) {
+    if (orders[idx].type === 'recharge') {
+      users[uidx].balance += orders[idx].credits;
+      saveDB('users.json', users);
+      const txns = loadDB('transactions.json');
+      txns.push({ id: crypto.randomUUID(), userId: users[uidx].id, type: 'recharge', amount: orders[idx].credits, desc: '充值到账 ¥' + orders[idx].amount, balance: users[uidx].balance, createdAt: new Date().toISOString() });
+      saveDB('transactions.json', txns);
+      res.json({ message: '充值已到账 +' + orders[idx].credits + ' 积分', balance: users[uidx].balance });
+    } else {
+      users[uidx].plan = orders[idx].plan;
+      saveDB('users.json', users);
+      res.json({ message: '套餐已激活：' + orders[idx].plan, plan: orders[idx].plan });
+    }
+  } else {
+    res.json({ message: '订单已批准' });
+  }
 });
 
 app.post('/api/admin/orders/:id/reject', authMiddleware, adminMiddleware, (req, res) => {
   let orders = loadDB('orders.json');
   const idx = orders.findIndex(o => o.id === req.params.id);
-  if (idx < 0) return res.status(404);
+  if (idx < 0) return res.status(404).json({ error: '订单不存在' });
   orders[idx].status = 'rejected';
+  orders[idx].rejectedAt = new Date().toISOString();
+  orders[idx].rejectReason = req.body.reason || '';
   saveDB('orders.json', orders);
   res.json({ message: '已拒绝' });
 });
@@ -638,7 +727,11 @@ app.listen(PORT, '0.0.0.0', () => {
 ║  POST /api/auth/register|login   — 认证                  ║
 ║  GET  /api/user/profile|quota|transactions               ║
 ║  GET  /api/plans                 — 套餐                  ║
-║  POST /api/orders                — 支付                  ║
+║  POST /api/orders                — 创建套餐/充值订单      ║
+║  POST /api/orders/:id/verify     — 提交支付凭证           ║
+║  POST /api/orders/:id/cancel     — 取消订单               ║
+║  GET  /api/orders                — 用户订单列表           ║
+║  GET  /api/recharge-products     — 充值产品               ║
 ║  GET  /api/templates             — 模板                  ║
 ║  POST /api/generate              — 生成（含配额检查）      ║
 ║  ALL  /api/v1/*                  — Atlas API 代理        ║

@@ -74,9 +74,11 @@ function dramaDelChar(id) {
 
 async function dramaBatchGen() {
   if (DR.generating) return;
-  if (!S.key) { toast('请先配置 API Key', 'error'); return; }
+  if (!AUTH.token) { toast('请先注册/登录后再生成视频', 'error'); showAuthModal('login'); return; }
+  if (!S.key && S.provider === 'atlas') { toast('请先在设置中配置 API Key', 'error'); toggleSettings(); return; }
   var invalid = DR.scenes.filter(function(s) { return !s.desc.trim(); });
   if (invalid.length) { toast('请填写所有场景描述', 'error'); return; }
+  if (AUTH.balance < 10) { toast('积分不足，请先充值', 'error'); rechargeModal(); return; }
   if (AUTH.balance < DR.scenes.length * 36) { toast('积分不足！需要 ' + DR.scenes.length * 36 + ' 分', 'error'); return; }
 
   DR.generating = true; DR.results = [];
@@ -86,12 +88,14 @@ async function dramaBatchGen() {
   for (var i = 0; i < DR.scenes.length; i++) {
     var scene = DR.scenes[i];
     try {
-      var body = { model: C.MODELS.text[S.model], prompt: scene.desc, duration: 5, resolution: '720p', ratio: '9:16', generate_audio: true, watermark: false };
+      var provider = S.provider || 'atlas';
+      var body = { model: C.MODELS.text[S.model], prompt: scene.desc, duration: 5, resolution: '720p', ratio: '9:16', generate_audio: true, watermark: false, provider: provider };
       var res = await apiPost('/api/generate', body);
-      var taskId = res.apiResponse?.data?.id || res.apiResponse?.id || res.taskId;
+      var genData = res.data || res;
+      var taskId = genData.id;
+      var taskProvider = genData._provider || provider;
       if (taskId) {
-        // 轮询等待
-        var videoUrl = await pollDramaTask(taskId);
+        var videoUrl = await pollDramaTask(taskId, taskProvider);
         DR.results.push({ sceneId: scene.id, url: videoUrl, label: '场景 ' + (i + 1) });
       }
     } catch (e) {
@@ -107,17 +111,22 @@ async function dramaBatchGen() {
   toast('批量生成完成！', 'success');
 }
 
-function pollDramaTask(taskId) {
+function pollDramaTask(taskId, provider) {
+  var actualProvider = provider || 'atlas';
   return new Promise(function(resolve, reject) {
     var start = Date.now();
     (function poll() {
-      callApi(C.POLL + taskId, 'GET').then(function(data) {
-        var stat = (data.data || data).status;
+      var pollPromise = actualProvider === 'atlas'
+        ? callApi(C.POLL + taskId, 'GET')
+        : apiGet('/api/poll/' + actualProvider + '/' + taskId);
+      pollPromise.then(function(data) {
+        var t = data.data || data;
+        var stat = t.status;
         if (['completed', 'succeeded', 'done'].includes(stat)) {
-          var url = (data.data || data).outputs?.[0] || (data.data || data).video_url || '';
+          var url = t.outputs?.[0] || t.video_url || t.url || '';
           resolve(url);
         } else if (['failed', 'error'].includes(stat)) {
-          reject(new Error((data.data || data).error || '生成失败'));
+          reject(new Error(t.error || t.message || '生成失败'));
         } else if (Date.now() - start > C.MAX_POLL) {
           reject(new Error('超时'));
         } else {

@@ -27,12 +27,22 @@ async function renderAdminPanel() {
     document.getElementById('adminUserList').innerHTML = userHtml || '<p style="color:var(--text-secondary);">暂无用户</p>';
     try {
       var orders = await apiGet('/api/admin/orders');
-      var orderHtml = '';
+      var orderHtml = '<div style="margin-bottom:8px;"><input type="text" placeholder="搜索订单号/用户名/交易号..." oninput="filterAdminOrders(this.value)" style="font-size:12px;padding:7px 10px;"></div>';
+      var sn = { pending: '待支付', pending_approval: '待审批', approved: '已完成', rejected: '已拒绝', cancelled: '已取消', expired: '已过期' };
       for (var j = 0; j < orders.length; j++) {
         var o = orders[j];
-        var sn = { pending: '待支付', pending_approval: '待审批', approved: '已批准', rejected: '已拒绝' };
-        orderHtml += '<div class="admin-user-row"><span style="font-size:12px;">' + o.id + '</span><span style="font-size:12px;">' + (o.plan || '') + ' ¥' + (o.amount || 0) + '</span><span style="font-size:11px;">' + (sn[o.status] || o.status) + '</span>'
-          + (o.status === 'pending_approval' ? '<div class="admin-user-actions"><button class="btn btn-xs btn-primary" onclick="approveOrder(\'' + o.id + '\')">批准</button><button class="btn btn-xs" onclick="rejectOrder(\'' + o.id + '\')">拒绝</button></div>' : '') + '</div>';
+        var isRecharge = o.type === 'recharge';
+        var icon = isRecharge ? '💎' : '⬆️';
+        var desc = isRecharge ? ('充值 ¥' + o.amount + ' → ' + o.credits + '分') : (o.plan || '套餐');
+        var badge = o.amount ? '¥' + o.amount : '';
+        orderHtml += '<div class="admin-user-row" data-admin-order="' + o.id + ' ' + (o.username || '') + ' ' + (o.wechatTxnId || '') + '">'
+          + '<span style="font-size:10.5px;color:var(--text-muted);">' + o.id + '</span>'
+          + '<span style="font-size:11px;font-weight:600;">' + escHtml(o.username || '?') + '</span>'
+          + '<span style="font-size:11px;">' + icon + ' ' + desc + ' <span style="color:var(--accent);">' + badge + '</span></span>'
+          + '<span style="font-size:10.5px;">' + (sn[o.status] || o.status) + (o.wechatTxnId ? ' · ' + o.wechatTxnId : '') + '</span>'
+          + (o.status === 'pending_approval' ? '<div class="admin-user-actions"><button class="btn btn-xs btn-primary" onclick="approveOrder(\'' + o.id + '\')">批准</button><button class="btn btn-xs" onclick="rejectOrder(\'' + o.id + '\')">拒绝</button></div>' : '')
+          + (o.status === 'pending' ? '<button class="btn btn-xs" style="margin-left:4px;" onclick="approveOrder(\'' + o.id + '\')" title="强制批准">⚡</button>' : '')
+          + '</div>';
       }
       document.getElementById('adminOrderList').innerHTML = orderHtml || '<p style="color:var(--text-secondary);">暂无订单</p>';
     } catch (e) { document.getElementById('adminOrderList').innerHTML = '<p style="color:var(--error);">加载失败</p>'; }
@@ -57,12 +67,24 @@ async function adjustBalance(uid, username) {
 }
 
 async function approveOrder(oid) {
-  try { await apiPost('/api/admin/orders/' + oid + '/approve', {}); toast('已批准并激活套餐', 'success'); renderAdminPanel();
+  try {
+    var r = await apiPost('/api/admin/orders/' + oid + '/approve', {});
+    toast(r.message || '已批准', 'success');
+    renderAdminPanel();
     if (AUTH.token) { try { var u = await apiGet('/api/user/profile'); AUTH.user = u; AUTH.balance = u.balance; updateBalanceUI(); } catch (e) {} }
   } catch (e) { toast('失败: ' + e.message, 'error'); }
 }
 
 async function rejectOrder(oid) {
-  try { await apiPost('/api/admin/orders/' + oid + '/reject', {}); toast('已拒绝', 'success'); renderAdminPanel(); }
+  var reason = prompt('拒绝原因（可选）:', '');
+  try { await apiPost('/api/admin/orders/' + oid + '/reject', { reason: reason || '' }); toast('已拒绝', 'success'); renderAdminPanel(); }
   catch (e) { toast('失败: ' + e.message, 'error'); }
+}
+
+function filterAdminOrders(q) {
+  var rows = document.querySelectorAll('[data-admin-order]');
+  var kw = (q || '').toLowerCase();
+  for (var i = 0; i < rows.length; i++) {
+    rows[i].style.display = !kw || rows[i].getAttribute('data-admin-order').toLowerCase().includes(kw) ? '' : 'none';
+  }
 }
