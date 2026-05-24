@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Seedance Studio Pro — AI 视频生成</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<!-- Auth Overlay -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card card">
+    <div class="auth-logo">Seedance Studio Pro</div>
+    <p class="auth-sub">AI视频生成 · 电商模板 · 批量工作台</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="showLoginTab" onclick="switchAuthTab('login')">登录</button>
+      <button class="auth-tab" id="showRegTab" onclick="switchAuthTab('register')">注册</button>
+    </div>
+    <div id="authFormContent">
+      <input type="text" id="loginUsername" placeholder="用户名" class="auth-input">
+      <input type="password" id="loginPassword" placeholder="密码" class="auth-input" style="margin-top:10px;">
+      <button class="btn btn-primary w-full" id="doAuthBtn" onclick="doLogin()" style="margin-top:10px;">登录</button>
+      <p class="auth-hint">test / 123456（普通）| admin / admin123（管理员）| 或注册新账号</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<header class="header">
+  <div class="header-inner">
+    <a class="logo" href="#">
+      <div class="logo-icon">🎬</div>
+      <div><div class="logo-text">Seedance Studio Pro</div>
+      <div class="logo-sub">AI视频生成 · 电商模板 · 多模型 · 批量工作台</div></div>
+    </a>
+    <div class="header-right" id="headerRight" style="display:none;">
+      <span style="font-size:11px;color:var(--text-secondary);">套餐:</span>
+      <span id="planBadge" style="font-size:11px;font-weight:600;color:var(--accent);">免费版</span>
+      <span style="font-size:11px;color:var(--text-secondary);">额度:</span>
+      <span id="quotaUsed" style="font-size:12px;font-weight:600;">0/5</span>
+      <div class="quota-bar" style="width:60px;"><div class="quota-bar-fill" id="quotaBarFill" style="width:0%"></div></div>
+      <div class="credit-balance">
+        <span class="credit-icon">⭐</span>
+        <span style="font-size:13px;color:var(--text-secondary);">积分</span>
+        <span id="creditBalance" style="font-weight:700;font-size:17px;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">0</span>
+      </div>
+      <button class="btn btn-small btn-secondary" onclick="rechargeModal()">💰 充值</button>
+      <button class="btn btn-small btn-secondary" onclick="claimFree()">🎁 领额度</button>
+      <button class="btn btn-small btn-secondary" onclick="showUpgradeModal()">⬆️ 升级</button>
+      <button class="btn btn-small btn-secondary" id="adminBtn" onclick="toggleAdminPanel()" style="display:none;">🛡️ 管理</button>
+      <button class="btn btn-small btn-secondary" onclick="doLogout()">🚪 退出</button>
+      <span class="provider-badge">Atlas Cloud</span>
+      <div class="header-status">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">就绪</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+<div class="layout-2col">
+
+<!-- LEFT COLUMN -->
+<div class="col-main">
+
+  <!-- API Key Card -->
+  <div class="card">
+    <div class="card-title">🔑 API 密钥</div>
+    <div class="api-row">
+      <div class="input-wrap">
+        <input type="password" id="apiKeyInput" placeholder="Atlas Cloud API Key" autocomplete="off">
+        <button class="toggle-key-btn" onclick="toggleKey()" title="显示/隐藏">👁️</button>
+      </div>
+      <button class="btn btn-secondary" onclick="saveKey()">保存</button>
+      <span class="api-status not-configured" id="apiStatus"><span>●</span> 未配置</span>
+      <a class="btn btn-link" href="https://console.atlascloud.ai" target="_blank" rel="noopener">🆓 免费领额度</a>
+    </div>
+    <div id="errorBox" class="error-detail-box"></div>
+  </div>
+
+  <!-- Generator Card -->
+  <div class="card">
+    <div class="card-title">🎬 视频生成</div>
+    <div id="standardForm">
+    <div class="form-grid">
+      <div class="full-width form-group">
+        <label>📋 模式</label>
+        <div class="mode-pills">
+          <button class="mode-pill active" data-mode="text" onclick="switchMode(this,'text')">✏️ 文生视频</button>
+          <button class="mode-pill" data-mode="image" onclick="switchMode(this,'image')">🖼️ 图生视频</button>
+          <button class="mode-pill" data-mode="drama" onclick="switchMode(this,'drama')">🎬 AI短剧</button>
+        </div>
+      </div>
+
+      <div class="full-width form-group">
+        <label>📝 提示词</label>
+        <div class="textarea-wrap">
+          <textarea id="promptInput" placeholder="用文字描述你想要的视频内容&#10;中文示例：一只柴犬在雪地里奔跑，电影质感，柔和的自然光&#10;Ctrl+Enter 快速发送" maxlength="1000" rows="4"></textarea>
+          <span class="textarea-hint">Ctrl+Enter 发送</span>
+          <span class="textarea-count"><span id="charCount">0</span>/1000</span>
+        </div>
+        <div class="suggestions" id="suggestions">
+          <span class="suggestion-chip" onclick="fillPrompt('一只柴犬在雪地里奔跑，电影质感，4K画质')">🐕 柴犬雪地</span>
+          <span class="suggestion-chip" onclick="fillPrompt('赛博朋克城市的早餐摊，霓虹灯光，雨夜氛围')">🌆 赛博朋克</span>
+          <span class="suggestion-chip" onclick="fillPrompt('水墨风山水画中一叶扁舟，烟雨朦胧，意境悠远')">🎨 水墨山水</span>
+          <span class="suggestion-chip" onclick="fillPrompt('时尚服装展示视频，模特在都市街头漫步，电影感色调')">👗 服装展示</span>
+          <span class="suggestion-chip" onclick="fillPrompt('美妆产品在柔和灯光下优雅展示，微距镜头，4K画质')">💄 美妆展示</span>
+        </div>
+      </div>
+
+      <!-- Image upload (image mode) -->
+      <div class="full-width form-group" id="imageGroup" style="display:none;">
+        <label>🖼️ 参考图片</label>
+        <div class="image-upload-wrap">
+          <div class="image-upload-field">
+            <input type="text" id="imgUrl1" placeholder="图片 URL 或点击右侧上传">
+            <input type="file" id="imgFile1" accept="image/*" style="display:none;">
+            <button class="btn btn-small btn-secondary" onclick="document.getElementById('imgFile1').click()">📁 上传</button>
+          </div>
+          <div class="image-cards" id="imgCards"></div>
+          <div class="image-dropzone" id="imgDropzone1" onclick="document.getElementById('imgFile1').click()">
+            <span class="icon">📷</span> 拖放或点击上传首帧图片
+          </div>
+        </div>
+      </div>
+
+      <!-- Product Scraper -->
+      <div class="full-width form-group" id="scraperGroup">
+        <label>🔗 商品链接（可选，自动提取商品信息填入模板）</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="productUrl" placeholder="粘贴淘宝/1688/京东/Shopify商品链接" style="flex:1;font-size:13px;">
+          <button class="btn btn-small btn-secondary" onclick="scrapeProduct()">🔍 抓取</button>
+        </div>
+        <div id="scrapeResult" style="display:none;margin-top:8px;padding:10px;background:#121420;border-radius:var(--radius-sm);font-size:12px;"></div>
+      </div>
+
+      <!-- AI Provider -->
+      <div class="form-group">
+        <label>🤖 AI 模型</label>
+        <div class="model-pills" id="providerPills">
+          <button class="model-pill active" data-provider="atlas" onclick="pickProvider(this,'atlas')">🌐 Atlas<span class="pill-sub">Seedance 2.0</span></button>
+          <button class="model-pill" data-provider="kling" onclick="pickProvider(this,'kling')">🎬 可灵<span class="pill-sub">Kling AI</span></button>
+          <button class="model-pill" data-provider="wanxiang" onclick="pickProvider(this,'wanxiang')">🎨 万相<span class="pill-sub">通义万相</span></button>
+          <button class="model-pill" data-provider="auto" onclick="pickProvider(this,'auto')">🔄 自动<span class="pill-sub">智能切换</span></button>
+        </div>
+      </div>
+
+      <!-- Params -->
+      <div class="form-group">
+        <label>📐 速度</label>
+        <div class="model-pills">
+          <button class="model-pill active" data-model="fast" onclick="pickModel(this,'fast')">⚡ Fast<span class="pill-sub">¥0.7/秒</span></button>
+          <button class="model-pill" data-model="standard" onclick="pickModel(this,'standard')">💎 Standard<span class="pill-sub">¥0.9/秒</span></button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>⏱️ 时长</label>
+        <select id="duration" onchange="updateCost()">
+          <option value="5">5秒</option><option value="8">8秒</option><option value="10">10秒</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>📺 分辨率</label>
+        <select id="resolution">
+          <option value="720p">720p</option><option value="1080p" selected>1080p</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>📱 比例</label>
+        <select id="ratio">
+          <option value="9:16" selected>9:16 (竖版)</option><option value="16:9">16:9 (横版)</option><option value="1:1">1:1 (正方形)</option>
+        </select>
+      </div>
+
+      <!-- Toggles -->
+      <div class="full-width toggle-group">
+        <label class="toggle"><input type="checkbox" id="compareToggle" onchange="toggleCompare()"><span class="toggle-slider"></span> 对比模式</label>
+        <label class="toggle"><input type="checkbox" id="audioToggle" checked><span class="toggle-slider"></span> 生成音频</label>
+        <label class="toggle"><input type="checkbox" id="watermarkToggle"><span class="toggle-slider"></span> 水印</label>
+        <div class="cost-display" id="costDisplay">
+          💰 <span id="costNum">¥3.5</span><span class="unit">/次</span><span class="note">（Fast）</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compare panel -->
+    <div id="comparePanel" style="display:none;margin-top:14px;padding-top:14px;border-top:1.5px solid var(--border);">
+      <div class="form-grid">
+        <div class="form-group"><label>Seed 2</label><input type="text" id="seedInput2" placeholder="留空则随机"></div>
+        <div class="form-group"><label>时长 2</label><select id="duration2"><option value="">同左</option><option value="5">5秒</option><option value="8">8秒</option><option value="10">10秒</option></select></div>
+      </div>
+    </div>
+
+    <!-- Advanced -->
+    <div class="advanced-section">
+      <div class="advanced-header" onclick="toggleAdvanced()">⚙️ 高级参数 <span id="advArrow">▼</span></div>
+      <div class="advanced-panel" id="advancedPanel">
+        <div class="form-grid">
+          <div class="form-group"><label>负向提示词</label><input type="text" id="negativePrompt" placeholder="不想看到的内容"></div>
+          <div class="form-group"><label>Seed</label><div style="display:flex;gap:4px;"><input type="text" id="seedInput" placeholder="随机"><button class="btn btn-xs" onclick="randSeed()">🎲</button></div></div>
+          <div class="form-group"><label>镜头运动</label><select id="motionIntensity"><option value="">默认</option><option value="low">轻微</option><option value="medium">中等</option><option value="high">强烈</option></select></div>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <!-- Template Quick Bar -->
+    <div id="templateQuickBar" style="margin-top:14px;padding-top:14px;border-top:1.5px solid var(--border);">
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">📦 电商视频模板 · 选择一个模板自动填入提示词</div>
+      <div class="template-grid" id="templateQuickGrid"></div>
+    </div>
+
+    <!-- Drama Section -->
+    <div id="dramaSection" style="display:none;">
+      <!-- Drama content simplified for MVP -->
+    </div>
+
+    <button class="btn btn-gen btn-primary" id="genBtn" onclick="generate()">🚀 开始生成视频</button>
+  </div>
+
+  <!-- Progress -->
+  <div class="card progress-section" id="progSection">
+    <div class="card-title">📊 生成进度</div>
+    <div id="progSingle">
+      <div class="task-id" id="taskIdDisplay">任务 ID: --</div>
+      <div class="progress-bar-container"><div class="progress-bar" id="progBar" style="width:0%"></div></div>
+      <div class="progress-info">
+        <span class="progress-status"><span class="spinner" id="progSpinner"></span><span id="progText">准备中...</span></span>
+        <span id="progPct">0%</span>
+      </div>
+    </div>
+    <div id="progDual" style="display:none;">
+      <div class="dual-progress">
+        <div><div class="task-label"><span class="num">版本 1</span> <span id="dualTask1Id"></span></div><div class="progress-bar-container"><div class="progress-bar" id="progBar1"></div></div><div class="progress-info"><span id="dualStatus1"></span><span id="dualPct1">0%</span></div></div>
+        <div><div class="task-label"><span class="num">版本 2</span> <span id="dualTask2Id"></span></div><div class="progress-bar-container"><div class="progress-bar" id="progBar2"></div></div><div class="progress-info"><span id="dualStatus2"></span><span id="dualPct2">0%</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="card result-section" id="resultSection">
+    <div class="card-title">✅ 生成结果</div>
+    <div class="video-wrapper"><video id="resultVideo" controls></video></div>
+    <div class="result-actions">
+      <button class="btn btn-primary" onclick="downloadVideo()">⬇️ 下载</button>
+      <button class="btn btn-secondary" onclick="copyVideoLink()">📋 复制链接</button>
+      <button class="btn btn-secondary" onclick="showResultOverlay()">🔍 放大查看</button>
+    </div>
+    <div id="compareResult" class="compare-results" style="display:none;"></div>
+  </div>
+
+</div>
+
+<!-- RIGHT COLUMN -->
+<div class="col-side" id="colSideDefault">
+
+  <!-- Upgrade Card (shown when quota low) -->
+  <div class="card" id="upgradeCard" style="display:none;border-color:var(--accent);">
+    <div style="text-align:center;">
+      <p style="font-size:14px;font-weight:600;margin-bottom:6px;">⚡ 升级套餐解锁更多</p>
+      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">当前套餐额度即将用完</p>
+      <button class="btn btn-primary btn-small" onclick="showUpgradeModal()">查看套餐</button>
+    </div>
+  </div>
+
+  <!-- Gallery -->
+  <div class="card">
+    <div class="card-title">💡 灵感画廊</div>
+    <div class="gallery-scroll" id="galleryScroll">
+      <div class="gallery-card" onclick="fillPrompt('一只柴犬在雪地里奔跑，电影质感，柔和自然光，4K画质')"><div class="gallery-visual" style="background:linear-gradient(135deg,#4a90d9,#87ceeb);">🐕</div><div class="gallery-info"><div class="g-title">柴犬雪地奔跑</div><div class="g-use">点击使用</div></div></div>
+      <div class="gallery-card" onclick="fillPrompt('赛博朋克城市的早餐摊，霓虹灯光，雨夜，蒸汽波风格，电影感')"><div class="gallery-visual" style="background:linear-gradient(135deg,#ff6b6b,#c44dff);">🌆</div><div class="gallery-info"><div class="g-title">赛博朋克城市</div><div class="g-use">点击使用</div></div></div>
+      <div class="gallery-card" onclick="fillPrompt('水墨风山水画中一叶扁舟，烟雨朦胧，留白构图')"><div class="gallery-visual" style="background:linear-gradient(135deg,#2d3436,#636e72);">🎨</div><div class="gallery-info"><div class="g-title">水墨山水画</div><div class="g-use">点击使用</div></div></div>
+      <div class="gallery-card" onclick="fillPrompt('时尚女装展示，模特在都市街头漫步，电影感色调，慢动作')"><div class="gallery-visual" style="background:linear-gradient(135deg,#e84393,#fd79a8);">👗</div><div class="gallery-info"><div class="g-title">时尚服装展示</div><div class="g-use">点击使用</div></div></div>
+      <div class="gallery-card" onclick="fillPrompt('美妆产品在柔和灯光下优雅展示，微距镜头，金色粒子效果')"><div class="gallery-visual" style="background:linear-gradient(135deg,#fdcb6e,#e17055);">💄</div><div class="gallery-info"><div class="g-title">美妆产品展示</div><div class="g-use">点击使用</div></div></div>
+      <div class="gallery-card" onclick="fillPrompt('美食制作过程，食材入锅的瞬间，蒸汽升腾，暖色调')"><div class="gallery-visual" style="background:linear-gradient(135deg,#e17055,#d63031);">🍳</div><div class="gallery-info"><div class="g-title">美食制作过程</div><div class="g-use">点击使用</div></div></div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="card">
+    <div class="card-title">📜 生成记录 <span style="font-size:11px;font-weight:400;"><a href="javascript:void(0)" onclick="showWorksModal()" style="color:var(--accent);">查看全部</a></span></div>
+    <div class="history-list" id="historyList"><div class="history-empty"><div class="empty-icon">📭</div><p>暂无生成记录</p></div></div>
+  </div>
+</div>
+
+</div></div>
+
+<!-- Result Overlay -->
+<div class="result-overlay" id="resultOverlay" onclick="if(event.target===this)closeResultOverlay()">
+  <div class="ro-card">
+    <div class="ro-header"><h3>视频预览</h3><button class="ro-close" onclick="closeResultOverlay()">✕</button></div>
+    <div class="ro-video"><video id="roVideo" controls></video></div>
+    <div class="ro-body"><div class="ro-prompt" id="roPrompt"></div><div class="ro-actions"><button class="btn btn-primary" onclick="downloadVideo()">⬇️ 下载</button><button class="btn btn-secondary" onclick="copyVideoLink()">📋 复制链接</button></div></div>
+  </div>
+</div>
+
+<!-- Works Modal -->
+<div class="modal-overlay" id="worksModal" onclick="if(event.target===this)closeWorksModal()">
+  <div class="modal-content">
+    <div class="modal-header"><h2>全部作品</h2><button class="modal-close" onclick="closeWorksModal()">✕</button></div>
+    <div class="modal-body"><div class="modal-search"><input type="text" placeholder="搜索历史记录..." id="worksSearch" oninput="filterWorks()"></div><div class="works-grid" id="worksGrid"></div></div>
+  </div>
+</div>
+
+<!-- Admin Panel -->
+<div class="modal-overlay" id="adminPanel" onclick="if(event.target===this)closeAdminPanel()">
+  <div class="modal-content" style="max-width:700px;">
+    <div class="modal-header"><h2>🛡️ 管理员面板</h2><button class="modal-close" onclick="closeAdminPanel()">✕</button></div>
+    <div class="modal-body">
+      <div style="margin-bottom:16px;"><h3 style="font-size:14px;margin-bottom:8px;">API Key 管理</h3>
+        <div style="display:flex;gap:8px;"><input type="text" id="adminApiKey" class="auth-input" placeholder="Atlas Cloud API Key"><button class="btn btn-primary btn-small" onclick="saveAdminApiKey()">💾 保存</button></div>
+      </div>
+      <div style="margin-bottom:16px;"><h3 style="font-size:14px;margin-bottom:8px;">用户管理</h3><div id="adminUserList"></div></div>
+      <div style="margin-bottom:16px;"><h3 style="font-size:14px;margin-bottom:8px;">订单审批</h3><div id="adminOrderList"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Paywall Modal -->
+<div class="paywall-overlay hidden" id="paywallOverlay" onclick="if(event.target===this)hidePaywall()">
+  <div class="paywall-card">
+    <h2>⬆️ 升级套餐</h2>
+    <p class="subtitle">解锁更多视频生成额度</p>
+    <div class="plan-grid" id="planGrid"></div>
+    <p style="font-size:11px;color:var(--text-secondary);margin-top:12px;">支付后联系管理员验证开通</p>
+    <button class="btn btn-secondary btn-small" onclick="hidePaywall()" style="margin-top:8px;">关闭</button>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/generator.js"></script>
+<script src="js/drama.js"></script>
+<script src="js/ecommerce-templates.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -5,11 +5,16 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "seedance": "node seedance-server.js",
+    "seedance-dev": "node --watch seedance-server.js"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "docx": "^9.6.1",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
-    "bcryptjs": "^2.4.3"
+    "pngjs": "^7.0.0",
+    "pptxgenjs": "^4.0.1"
   }
 }
