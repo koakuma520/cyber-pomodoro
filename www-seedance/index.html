@@ -170,6 +170,7 @@
             <button class="segment" data-model="standard" onclick="pickModel(this,'standard')">Pro</button>
           </div>
           <div class="quality-price" id="qualityPrice">1 积分/次</div>
+          <div class="cost-detail" id="costDetail"></div>
         </div>
 
         <!-- Parameters -->
@@ -185,7 +186,7 @@
           </div>
           <div class="param-group">
             <label class="param-label">分辨率</label>
-            <select id="resolution">
+            <select id="resolution" onchange="updateCost()">
               <option value="720p">720p</option>
               <option value="1080p" selected>1080p</option>
             </select>
@@ -328,7 +329,7 @@
             </div>
             <div class="param-group">
               <label class="param-label">时长 2</label>
-              <select id="duration2">
+              <select id="duration2" onchange="updateCost()">
                 <option value="">同上</option>
                 <option value="5">5秒</option>
                 <option value="8">8秒</option>
@@ -344,6 +345,7 @@
           <span class="gen-btn-text">开始生成视频</span>
           <span class="gen-btn-cost" id="costDisplay">约 <span id="costNum">1 积分</span></span>
         </button>
+        <div class="remain-hint" id="remainCount"></div>
       </main>
 
       <!-- RIGHT PANEL — Progress & Results -->
@@ -565,7 +567,7 @@
   <div class="modal-content" style="max-width:560px;">
     <div class="modal-header"><h2>💎 充值积分</h2><button class="modal-close" onclick="closeRechargeModal()">✕</button></div>
     <div class="modal-body">
-      <p class="text-muted text-sm" style="margin-bottom:16px;">1元起充，套餐月费更划算。积分可用于生成视频，大额充值享额外赠送。</p>
+      <p class="text-muted text-sm" style="margin-bottom:16px;">套餐内含视频额度用完后可在此补充。套餐内每条视频￥1.3-2.0，充值包￥2.1-2.9/条，订阅更划算。</p>
       <div class="recharge-grid" id="rechargeGrid"></div>
       <p class="text-muted text-xs mt-8">流程：选择金额 → 创建订单 → 微信扫码支付 → 输入交易号 → 管理员验证到账</p>
     </div>

@@ -1,6 +1,14 @@
 // Seedance Studio Pro — 视频生成引擎
 var ALL_HISTORY = [];
 
+function calcGenCost(model, duration, resolution) {
+  var t = C.PRICE_TABLE;
+  if (t[model] && t[model][resolution] && t[model][resolution][String(duration)]) {
+    return t[model][resolution][String(duration)];
+  }
+  return 1; // 兜底
+}
+
 async function generate() {
   // 1. 检查登录
   if (!AUTH.token) {
@@ -15,17 +23,18 @@ async function generate() {
   var prompt = document.getElementById('promptInput').value.trim();
   if (!prompt) { toast('请输入提示词', 'error'); return; }
 
-  // 4. 刷新积分余额
+  // 4. 计算费用并检查积分
   try { quotaData = await apiGet('/api/user/quota'); updateBalanceUI(); } catch (e) {}
-  if (AUTH.balance < 1) {
-    toast('积分不足！当前 ' + AUTH.balance + ' 分，快速模式需 1 分/次，请充值', 'error');
+  var duration = parseInt(document.getElementById('duration').value) || 5;
+  var resolution = document.getElementById('resolution').value || '720p';
+  var cost = calcGenCost(S.model, duration, resolution);
+  var isCompare = S.compare && document.getElementById('compareToggle').checked;
+
+  if (AUTH.balance < cost) {
+    toast('积分不足！当前 ' + AUTH.balance + ' 分，本次需要 ' + cost + ' 分（' + S.model + ' ' + duration + 's ' + resolution + '）', 'error');
     setTimeout(function() { rechargeModal(); }, 500);
     return;
   }
-
-  var cost = C.CREDIT[S.model] || 1;
-  var isCompare = S.compare && document.getElementById('compareToggle').checked;
-
   if (isCompare && AUTH.balance < cost * 2) { toast('对比模式需 ' + (cost * 2) + ' 积分，当前 ' + AUTH.balance + ' 分', 'error'); rechargeModal(); return; }
   S._lastCost = isCompare ? cost * 2 : cost;
 
@@ -42,8 +51,6 @@ async function generate() {
 
   try {
     var modelId = C.MODELS[S.mode][S.model];
-    var duration = parseInt(document.getElementById('duration').value) || 5;
-    var resolution = document.getElementById('resolution').value;
     var ratio = document.getElementById('ratio').value;
     var audio = document.getElementById('audioToggle').checked;
     var wm = document.getElementById('watermarkToggle').checked;
@@ -440,13 +447,12 @@ function switchMode(el, m) {
 function pickModel(el, m) {
   document.querySelectorAll('#qualitySegments .segment').forEach(function(p) { p.classList.remove('active'); });
   el.classList.add('active'); S.model = m; updateCost();
-  var priceEl = document.getElementById('qualityPrice');
-  if (priceEl) priceEl.textContent = C.CREDIT[m] + ' 积分/次';
 }
 
 function toggleCompare() {
   S.compare = document.getElementById('compareToggle').checked;
   document.getElementById('comparePanel').style.display = S.compare ? 'block' : 'none';
+  updateCost();
 }
 
 function randSeed() { document.getElementById('seedInput').value = Math.floor(Math.random() * 2147483647); }
@@ -460,13 +466,38 @@ function fillPrompt(text) {
 }
 
 function updateCost() {
-  var credits = C.CREDIT[S.model] || 1;
+  var duration = parseInt(document.getElementById('duration')?.value) || 5;
+  var resolution = document.getElementById('resolution')?.value || '720p';
+  var credits = calcGenCost(S.model, duration, resolution);
   var isCompare = S.compare && document.getElementById('compareToggle')?.checked;
   var total = isCompare ? credits * 2 : credits;
+
+  // 生成按钮里的积分数字
   var cn = document.getElementById('costNum');
   if (cn) cn.textContent = total + ' 积分';
+
+  // 质量选择区：当前单价 + 范围
   var priceEl = document.getElementById('qualityPrice');
-  if (priceEl) priceEl.textContent = credits + ' 积分/次';
+  if (priceEl) {
+    var minP = calcGenCost(S.model, 5, '720p');
+    var maxP = calcGenCost(S.model, 10, '1080p');
+    priceEl.textContent = credits + ' 分/次' + (minP === maxP ? '' : ' (' + minP + '-' + maxP + ')');
+  }
+
+  // 费用明细: Fast · 10s · 1080p
+  var detailEl = document.getElementById('costDetail');
+  if (detailEl) {
+    var modelName = S.model === 'standard' ? 'Pro' : 'Fast';
+    detailEl.textContent = modelName + ' · ' + duration + 's · ' + resolution;
+    if (isCompare) detailEl.textContent += ' · 对比 ×2';
+  }
+
+  // 余额可生成次数
+  var countEl = document.getElementById('remainCount');
+  if (countEl && AUTH.balance >= 0 && total > 0) {
+    var n = Math.floor(AUTH.balance / total);
+    countEl.textContent = '余额可生成 ' + n + ' 次';
+  }
 }
 
 function updateGenBtn(state) {

@@ -78,18 +78,22 @@ async function dramaBatchGen() {
   if (!S.key && S.provider === 'atlas') { toast('请先在设置中配置 API Key', 'error'); toggleSettings(); return; }
   var invalid = DR.scenes.filter(function(s) { return !s.desc.trim(); });
   if (invalid.length) { toast('请填写所有场景描述', 'error'); return; }
+  var duration = parseInt(document.getElementById('duration')?.value) || 5;
+  var resolution = document.getElementById('resolution')?.value || '720p';
+  var perSceneCost = typeof calcGenCost === 'function' ? calcGenCost(S.model, duration, resolution) : 1;
+  var totalCost = DR.scenes.length * perSceneCost;
   if (AUTH.balance < 1) { toast('积分不足，请先充值', 'error'); rechargeModal(); return; }
-  if (AUTH.balance < DR.scenes.length * 1) { toast('积分不足！需要 ' + DR.scenes.length + ' 分', 'error'); return; }
+  if (AUTH.balance < totalCost) { toast('积分不足！' + DR.scenes.length + '个场景共计需要 ' + totalCost + ' 分（' + perSceneCost + '分/场景）', 'error'); return; }
 
   DR.generating = true; DR.results = [];
   dramaRenderAll();
-  toast('开始批量生成 ' + DR.scenes.length + ' 个场景...', 'info');
+  toast('开始批量生成 ' + DR.scenes.length + ' 个场景（' + perSceneCost + '分/场景，共' + totalCost + '分）...', 'info');
 
   for (var i = 0; i < DR.scenes.length; i++) {
     var scene = DR.scenes[i];
     try {
       var provider = S.provider || 'atlas';
-      var body = { model: C.MODELS.text[S.model], prompt: scene.desc, duration: 5, resolution: '720p', ratio: '9:16', generate_audio: true, watermark: false, provider: provider };
+      var body = { model: C.MODELS.text[S.model], prompt: scene.desc, duration: duration, resolution: resolution, ratio: '9:16', generate_audio: true, watermark: false, provider: provider };
       var res = await apiPost('/api/generate', body);
       var genData = res.data || res;
       var taskId = genData.id;

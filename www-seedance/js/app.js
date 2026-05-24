@@ -30,6 +30,7 @@ function switchTab(tab) {
     S.mode = activeMode ? (activeMode.getAttribute('data-mode') || 'text') : 'text';
     document.getElementById('templateQuickBar').style.display = '';
     document.getElementById('genBtn').style.display = '';
+    if (typeof updateCost === 'function') updateCost();
   }
 }
 

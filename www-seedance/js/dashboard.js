@@ -63,7 +63,7 @@ function renderDashboardGuest() {
       + '<div class="landing-feature-card"><span class="lfc-icon">🤖</span><h3>多模型路由</h3><p>集成了可灵Kling、通义万相、Atlas Cloud，智能故障转移，确保生成成功</p></div>'
       + '<div class="landing-feature-card"><span class="lfc-icon">📦</span><h3>25+电商模板</h3><p>覆盖服装、美妆、食品、3C数码、家居、母婴等行业，一键套用专业营销文案</p></div>'
       + '<div class="landing-feature-card"><span class="lfc-icon">📤</span><h3>多平台适配</h3><p>自动生成9:16(抖音)/16:9(YouTube)/1:1(淘宝)/3:4(小红书)多尺寸版本</p></div>'
-      + '<div class="landing-feature-card"><span class="lfc-icon">⭐</span><h3>积分制付费</h3><p>免费版每月5积分，个人版199元/80积分，专业版599元/300积分，用多少扣多少</p></div>'
+      + '<div class="landing-feature-card"><span class="lfc-icon">⭐</span><h3>视频额度制</h3><p>免费版5条/月，个人版¥99/50条，专业版¥499/300条，企业版¥1999/1500条，不到外包1/10的价格</p></div>'
       + '<div class="landing-feature-card"><span class="lfc-icon">🎭</span><h3>短剧工作台</h3><p>多场景批量生成，角色库+场景库，适合剧情类营销内容创作</p></div>'
       + '</div>';
   }
