@@ -3,7 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Seedance Studio Pro — AI 视频创作工作台</title>
+<title>Seedance Studio Pro — AI电商短视频批量生成平台 | 商品链接转营销视频</title>
+<meta name="description" content="Seedance Studio Pro 是面向电商卖家的AI短视频批量生成SaaS平台。将淘宝/1688/京东/Shopify商品链接变成可直接投放的营销视频，支持可灵/通义万相多模型路由，内建25+电商模板，实现1人管100个账号的内容产能。">
+<meta name="keywords" content="AI视频生成,电商视频,短视频批量制作,商品视频,AI带货视频,抖音视频制作,淘宝主图视频,AI电商工具,视频营销SaaS">
+<meta property="og:title" content="Seedance Studio Pro — AI电商短视频批量生成平台">
+<meta property="og:description" content="把商品链接变成可投放的营销视频，1人管100个账号。支持多模型路由，25+电商模板，批量生产。">
+<meta property="og:type" content="website">
+<meta property="og:image" content="/og-image.png">
+<meta property="og:url" content="https://seedance.studio">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Seedance Studio Pro — AI电商短视频批量生成">
+<meta name="twitter:description" content="商品链接→AI脚本→批量视频→多平台分发，电商卖家的视频工厂。">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://seedance.studio">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -42,7 +54,10 @@
       <span class="logo-text">Seedance<span class="logo-accent">Studio</span></span>
     </a>
     <nav class="header-nav" id="headerNav">
-      <button class="nav-tab active" data-tab="generate" onclick="switchTab('generate')">
+      <button class="nav-tab active" data-tab="dashboard" onclick="switchTab('dashboard')">
+        <span class="nav-icon">🏠</span>首页
+      </button>
+      <button class="nav-tab" data-tab="generate" onclick="switchTab('generate')">
         <span class="nav-icon">🎬</span>视频生成
       </button>
       <button class="nav-tab" data-tab="drama" onclick="switchTab('drama')">
@@ -50,6 +65,12 @@
       </button>
       <button class="nav-tab" data-tab="templates" onclick="switchTab('templates')">
         <span class="nav-icon">📦</span>电商模板
+      </button>
+      <button class="nav-tab" data-tab="datacenter" onclick="switchTab('datacenter')">
+        <span class="nav-icon">📊</span>数据中心
+      </button>
+      <button class="nav-tab" data-tab="assets" onclick="switchTab('assets')">
+        <span class="nav-icon">🗂️</span>素材库
       </button>
       <button class="nav-tab" data-tab="works" onclick="switchTab('works')">
         <span class="nav-icon">📜</span>我的作品
@@ -90,8 +111,11 @@
 <!-- ========== MAIN DASHBOARD ========== -->
 <div class="dashboard" id="appDashboard">
 
+  <!-- ===== TAB: 首页仪表盘 ===== -->
+  <div class="tab-panel active" id="tab-dashboard"></div>
+
   <!-- ===== TAB: 视频生成 ===== -->
-  <div class="tab-panel active" id="tab-generate">
+  <div class="tab-panel" id="tab-generate">
     <div class="dashboard-grid">
 
       <!-- LEFT SIDEBAR — Settings -->
@@ -145,7 +169,7 @@
             <button class="segment active" data-model="fast" onclick="pickModel(this,'fast')">Fast</button>
             <button class="segment" data-model="standard" onclick="pickModel(this,'standard')">Pro</button>
           </div>
-          <div class="quality-price" id="qualityPrice">¥0.7/秒</div>
+          <div class="quality-price" id="qualityPrice">36 积分/次</div>
         </div>
 
         <!-- Parameters -->
@@ -318,7 +342,7 @@
         <button class="generate-btn" id="genBtn" onclick="generate()">
           <span class="gen-btn-icon">🚀</span>
           <span class="gen-btn-text">开始生成视频</span>
-          <span class="gen-btn-cost" id="costDisplay">约 ¥<span id="costNum">3.5</span></span>
+          <span class="gen-btn-cost" id="costDisplay">约 <span id="costNum">36 积分</span></span>
         </button>
       </main>
 
@@ -370,6 +394,8 @@
             <button class="btn btn-primary btn-small flex-1" onclick="downloadVideo()">⬇️ 下载</button>
             <button class="btn btn-secondary btn-small flex-1" onclick="copyVideoLink()">📋 复制链接</button>
             <button class="btn btn-secondary btn-small" onclick="showResultOverlay()">🔍 放大</button>
+            <button class="btn btn-accent btn-small" onclick="showPostProcessPanel()">✂️ 后处理</button>
+            <button class="btn btn-accent btn-small" onclick="showDistributePanel()">📤 分发</button>
           </div>
           <div id="compareResult" class="compare-results" style="display:none;"></div>
         </div>
@@ -406,6 +432,12 @@
       <div class="tfp-grid" id="templateFullGrid"></div>
     </div>
   </div>
+
+  <!-- ===== TAB: 数据中心 ===== -->
+  <div class="tab-panel" id="tab-datacenter"></div>
+
+  <!-- ===== TAB: 素材库 ===== -->
+  <div class="tab-panel" id="tab-assets"></div>
 
   <!-- ===== TAB: 我的作品 ===== -->
   <div class="tab-panel" id="tab-works">
@@ -486,6 +518,7 @@
       </div>
       <div class="admin-section"><h3>👥 用户管理</h3><div id="adminUserList"></div></div>
       <div class="admin-section"><h3>📋 订单审批</h3><div id="adminOrderList"></div></div>
+      <div class="admin-section"><h3>🔑 API Key 管理</h3><div id="adminApiKeyList"></div></div>
     </div>
   </div>
 </div>
@@ -539,6 +572,52 @@
   </div>
 </div>
 
+<!-- Video Post-Process Modal -->
+<div class="modal-overlay" id="postProcessModal" onclick="if(event.target===this)closePostProcessModal()">
+  <div class="modal-content" style="max-width:500px;">
+    <div class="modal-header"><h2>✂️ 视频后处理</h2><button class="modal-close" onclick="closePostProcessModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="pp-section">
+        <label class="pp-label">✂️ 裁剪</label>
+        <div class="pp-row">
+          <div class="param-group" style="flex:1;"><label class="param-label">开始时间（秒）</label><input type="number" id="ppTrimStart" value="0" min="0" step="1"></div>
+          <div class="param-group" style="flex:1;"><label class="param-label">持续时长（秒，0=不裁剪）</label><input type="number" id="ppTrimDur" value="0" min="0" step="1"></div>
+        </div>
+      </div>
+      <div class="pp-section">
+        <label class="pp-label">🎵 背景音乐</label>
+        <select id="ppBgm" onchange="previewBgm()">
+          <option value="none">无背景音乐</option>
+          <option value="bgm-upbeat">活力轻快 — 适合促销</option>
+          <option value="bgm-cinematic">电影感 — 适合品牌</option>
+          <option value="bgm-relaxing">舒缓放松 — 适合生活方式</option>
+          <option value="bgm-corporate">商务专业 — 适合企业</option>
+        </select>
+      </div>
+      <div class="pp-section">
+        <label class="pp-label">📐 目标尺寸</label>
+        <div class="pp-size-presets">
+          <button class="pp-size-btn active" data-ratio="" onclick="pickPPSize(this,'')">保持原比例</button>
+          <button class="pp-size-btn" data-ratio="9:16" onclick="pickPPSize(this,'9:16')">9:16 抖音</button>
+          <button class="pp-size-btn" data-ratio="16:9" onclick="pickPPSize(this,'16:9')">16:9 YouTube</button>
+          <button class="pp-size-btn" data-ratio="1:1" onclick="pickPPSize(this,'1:1')">1:1 淘宝</button>
+        </div>
+      </div>
+      <div class="pp-section">
+        <label class="toggle-item"><span>🏷️ 添加品牌水印</span><label class="switch"><input type="checkbox" id="ppWatermark"><span class="switch-slider"></span></label></label>
+      </div>
+      <div id="ppProgress" style="display:none;margin-top:12px;">
+        <div class="progress-bar-wrap"><div class="progress-bar" id="ppProgBar" style="width:0%"></div></div>
+        <div class="progress-meta"><span id="ppProgText">处理中...</span></div>
+      </div>
+      <div class="payment-actions" style="margin-top:16px;">
+        <button class="btn btn-secondary" onclick="closePostProcessModal()">取消</button>
+        <button class="btn btn-primary" id="ppSubmitBtn" onclick="applyPostProcess()">⚡ 开始处理</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Orders History Modal -->
 <div class="modal-overlay" id="ordersModal" onclick="if(event.target===this)closeOrdersModal()">
   <div class="modal-content" style="max-width:680px;">
@@ -562,6 +641,10 @@
 <script src="js/generator.js"></script>
 <script src="js/drama.js"></script>
 <script src="js/ecommerce-templates.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/assets.js"></script>
+<script src="js/distribution.js"></script>
 <script src="js/admin.js"></script>
 <script src="js/app.js"></script>
 </body>

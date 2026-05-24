@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /js/
+Disallow: /css/
+Sitemap: https://seedance.studio/sitemap.xml

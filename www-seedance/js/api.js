@@ -19,6 +19,16 @@ async function apiGet(endpoint) {
     return d;
   } catch(e) { if (e.name === 'AbortError') throw new Error('请求超时'); throw e; }
 }
+async function apiDelete(endpoint) {
+  var h = {};
+  if (AUTH.token) h['Authorization'] = 'Bearer ' + AUTH.token;
+  try {
+    var r = await fetchWithTimeout(endpoint, { method: 'DELETE', headers: h }, 15000);
+    var d = await r.json().catch(function() { return null; });
+    if (!r.ok) throw new Error(d?.error || d?.message || '请求失败 (' + r.status + ')');
+    return d;
+  } catch(e) { if (e.name === 'AbortError') throw new Error('请求超时'); throw e; }
+}
 function fetchWithTimeout(url, opts, ms) {
   var ctrl = new AbortController();
   opts.signal = ctrl.signal;

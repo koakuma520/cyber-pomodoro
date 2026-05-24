@@ -28,7 +28,7 @@ async function generate() {
     return;
   }
 
-  var cost = Math.round(parseInt(document.getElementById('duration').value) * C.PRICE[S.model]);
+  var cost = C.CREDIT[S.model] || 36;
   var isCompare = S.compare && document.getElementById('compareToggle').checked;
 
   if (isCompare && AUTH.balance < cost * 2) { toast('对比模式需 ' + (cost * 2) + ' 积分，当前 ' + AUTH.balance + ' 分', 'error'); rechargeModal(); return; }
@@ -446,7 +446,7 @@ function pickModel(el, m) {
   document.querySelectorAll('#qualitySegments .segment').forEach(function(p) { p.classList.remove('active'); });
   el.classList.add('active'); S.model = m; updateCost();
   var priceEl = document.getElementById('qualityPrice');
-  if (priceEl) priceEl.textContent = '¥' + C.PRICE[m] + '/秒';
+  if (priceEl) priceEl.textContent = C.CREDIT[m] + ' 积分/次';
 }
 
 function toggleCompare() {
@@ -465,12 +465,13 @@ function fillPrompt(text) {
 }
 
 function updateCost() {
-  var dur = parseInt(document.getElementById('duration').value) || 5;
-  var total = (dur * C.PRICE[S.model]).toFixed(1);
+  var credits = C.CREDIT[S.model] || 36;
+  var isCompare = S.compare && document.getElementById('compareToggle')?.checked;
+  var total = isCompare ? credits * 2 : credits;
   var cn = document.getElementById('costNum');
-  if (cn) cn.textContent = '¥' + total;
+  if (cn) cn.textContent = total + ' 积分';
   var priceEl = document.getElementById('qualityPrice');
-  if (priceEl) priceEl.textContent = '¥' + C.PRICE[S.model] + '/秒';
+  if (priceEl) priceEl.textContent = credits + ' 积分/次';
 }
 
 function updateGenBtn(state) {
@@ -489,7 +490,7 @@ function updateGenBtn(state) {
     case 'queued': btn.innerHTML = '<span class="spinner-btn"></span> 排队中...'; btn.className += ' queued'; btn.disabled = true; break;
     case 'processing': btn.innerHTML = '<span class="spinner-btn"></span> 生成中...'; btn.className += ' processing'; btn.disabled = true; break;
     case 'done': btn.innerHTML = '<span class="gen-btn-icon">✅</span><span class="gen-btn-text">完成！查看结果</span>'; btn.className += ' done'; btn.onclick = function() { document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' }); }; break;
-    default: btn.innerHTML = '<span class="gen-btn-icon">🚀</span><span class="gen-btn-text">开始生成视频</span><span class="gen-btn-cost">约 ¥<span id="costNum">3.5</span></span>'; btn.onclick = generate;
+    default: btn.innerHTML = '<span class="gen-btn-icon">🚀</span><span class="gen-btn-text">开始生成视频</span><span class="gen-btn-cost">约 <span id="costNum">36 积分</span></span>'; btn.onclick = generate;
   }
 }
 
@@ -556,23 +557,62 @@ function useScrapedData() {
   var name = d.title || '';
   var html = '<div style="margin-top:10px;border-top:1px solid var(--border-light);padding-top:10px;">'
     + '<label style="font-size:12px;color:var(--text-secondary);">产品名称</label>'
-    + '<input type="text" id="scrapeProductName" value="' + escHtml(name) + '" style="margin:4px 0 8px;font-size:13px;">'
+    + '<input type="text" id="scrapeProductName" value="' + escHtml(name) + '" style="margin:4px 0 8px;font-size:13px;" oninput="updateScrapeScripts()">'
     + '<label style="font-size:12px;color:var(--text-secondary);">产品卖点 <span class="label-hint">可选</span></label>'
-    + '<input type="text" id="scrapeSellingPoints" placeholder="例如：限时特价、买二送一" style="margin:4px 0 8px;font-size:13px;">'
-    + '<div style="display:flex;gap:8px;margin-top:8px;">'
+    + '<input type="text" id="scrapeSellingPoints" placeholder="例如：限时特价、买二送一" style="margin:4px 0 8px;font-size:13px;" oninput="updateScrapeScripts()">'
+    + '<label style="font-size:12px;color:var(--text-secondary);margin-top:4px;">选择脚本风格</label>'
+    + '<div class="script-style-grid" id="scriptStyleGrid"></div>'
+    + '<div style="display:flex;gap:8px;margin-top:10px;">'
     + '<button class="btn btn-secondary btn-small" onclick="document.getElementById(\'scrapeResult\').style.display=\'none\'">取消</button>'
     + '<button class="btn btn-primary btn-small" onclick="confirmScrapedData()">📋 填入生成器</button></div></div>';
   resultDiv.innerHTML += html;
+  updateScrapeScripts();
+}
+
+function updateScrapeScripts() {
+  var name = document.getElementById('scrapeProductName')?.value?.trim() || '产品';
+  var sp = document.getElementById('scrapeSellingPoints')?.value?.trim() || '品质保证，值得信赖';
+  var grid = document.getElementById('scriptStyleGrid');
+  if (!grid) return;
+  var styles = [
+    { id: 'grass', icon: '🌿', name: '种草型', desc: '生活方式场景，温暖色调，自然光线，舒适放松的电影感', prompt: '生活方式场景视频，' + name + '融入日常使用场景中，温暖色调，自然光线透过窗户，舒适放松的氛围，电影感画面。' + sp },
+    { id: 'hard', icon: '📢', name: '硬广型', desc: '专业展示，柔和灯光，微距推进，4K画质，细节清晰', prompt: '专业商品展示视频，' + name + '在纯色背景下优雅展示，柔和摄影棚灯光，产品细节清晰可见，微距镜头缓慢推进，4K画质。' + sp },
+    { id: 'story', icon: '🎭', name: '剧情型', desc: '问题→解决方案叙事，真实场景对比，情感共鸣，品牌故事', prompt: '短视频剧情广告，主角遇到' + name + '之前的问题场景，使用后问题完美解决，前后对比效果惊人，真实情感共鸣，品牌故事叙述。' + sp }
+  ];
+  var html = '';
+  for (var i = 0; i < styles.length; i++) {
+    var s = styles[i];
+    var isActive = window._scrapeActiveStyle === s.id || (!window._scrapeActiveStyle && i === 0);
+    html += '<div class="script-style-card' + (isActive ? ' active' : '') + '" data-style="' + s.id + '" onclick="pickScrapeStyle(\'' + s.id + '\')">'
+      + '<span class="ssc-icon">' + s.icon + '</span>'
+      + '<div class="ssc-name">' + s.name + '</div>'
+      + '<div class="ssc-desc">' + s.desc + '</div>'
+      + '<div class="ssc-preview">' + escHtml(s.prompt.slice(0, 60)) + '...</div>'
+      + '</div>';
+  }
+  grid.innerHTML = html;
+  if (!window._scrapeActiveStyle) window._scrapeActiveStyle = 'grass';
+}
+
+function pickScrapeStyle(styleId) {
+  window._scrapeActiveStyle = styleId;
+  document.querySelectorAll('.script-style-card').forEach(function(c) { c.classList.toggle('active', c.getAttribute('data-style') === styleId); });
 }
 
 function confirmScrapedData() {
   var name = document.getElementById('scrapeProductName')?.value?.trim();
   if (!name) { toast('请输入产品名称', 'error'); return; }
   var sp = document.getElementById('scrapeSellingPoints')?.value?.trim() || '品质保证，值得信赖';
-  var text = '电商商品展示视频，产品：' + name + '，精美展示，专业灯光，4K画质。' + sp;
-  fillPrompt(text);
+  var style = window._scrapeActiveStyle || 'grass';
+  var prompts = {
+    grass: '生活方式场景视频，' + name + '融入日常使用场景中，温暖色调，自然光线透过窗户，舒适放松的氛围，电影感画面。' + sp,
+    hard: '专业商品展示视频，' + name + '在纯色背景下优雅展示，柔和摄影棚灯光，产品细节清晰可见，微距镜头缓慢推进，4K画质。' + sp,
+    story: '短视频剧情广告，主角遇到' + name + '之前的问题场景，使用后问题完美解决，前后对比效果惊人，真实情感共鸣，品牌故事叙述。' + sp
+  };
+  fillPrompt(prompts[style]);
   document.getElementById('scrapeResult').style.display = 'none';
-  toast('已从商品链接填入生成器', 'success');
+  window._scrapeActiveStyle = null;
+  toast('已填入「' + ({ grass: '种草型', hard: '硬广型', story: '剧情型' })[style] + '」脚本', 'success');
 }
 
 function setupDragDrop() {
@@ -585,4 +625,89 @@ function setupDragDrop() {
     var f = e.dataTransfer.files[0];
     if (f && f.type.startsWith('image/')) { document.getElementById('imgFile1').files = e.dataTransfer.files; handleFile({ target: { files: [f] } }, 1); }
   });
+}
+
+// ==================== 视频后处理 ====================
+var _ppRatio = '';
+var _ppProcessing = false;
+
+function showPostProcessPanel() {
+  var v = document.getElementById('resultVideo');
+  if (!v || !v.src) { toast('请先生成视频', 'error'); return; }
+  S._ppVideoUrl = v.src;
+  document.getElementById('postProcessModal').classList.add('open');
+  document.getElementById('ppTrimStart').value = 0;
+  document.getElementById('ppTrimDur').value = 0;
+  document.getElementById('ppBgm').value = 'none';
+  document.getElementById('ppWatermark').checked = false;
+  document.getElementById('ppProgress').style.display = 'none';
+  document.getElementById('ppSubmitBtn').disabled = false;
+  _ppRatio = '';
+  document.querySelectorAll('.pp-size-btn').forEach(function(b) { b.classList.toggle('active', b.getAttribute('data-ratio') === ''); });
+}
+
+function closePostProcessModal() {
+  if (_ppProcessing) return;
+  document.getElementById('postProcessModal').classList.remove('open');
+}
+
+function pickPPSize(el, ratio) {
+  _ppRatio = ratio;
+  document.querySelectorAll('.pp-size-btn').forEach(function(b) { b.classList.remove('active'); });
+  el.classList.add('active');
+}
+
+function previewBgm() {
+  // BGM preview is server-side; just show the selection
+}
+
+async function applyPostProcess() {
+  if (_ppProcessing) return;
+  var ops = [];
+  var trimStart = parseFloat(document.getElementById('ppTrimStart').value) || 0;
+  var trimDur = parseFloat(document.getElementById('ppTrimDur').value) || 0;
+  if (trimDur > 0) ops.push({ type: 'trim', params: { start: trimStart, duration: trimDur } });
+  if (_ppRatio) ops.push({ type: 'resize', params: { ratio: _ppRatio } });
+  if (document.getElementById('ppWatermark').checked) ops.push({ type: 'watermark', params: {} });
+  if (ops.length === 0) { toast('请选择至少一个处理操作', 'error'); return; }
+
+  _ppProcessing = true;
+  document.getElementById('ppProgress').style.display = 'block';
+  document.getElementById('ppSubmitBtn').disabled = true;
+  document.getElementById('ppSubmitBtn').textContent = '⏳ 处理中...';
+
+  try {
+    var res = await apiPost('/api/video/post-process', { videoUrl: S._ppVideoUrl, operations: ops });
+    await pollPostProcess(res.taskId);
+  } catch (e) {
+    toast('后处理失败: ' + e.message, 'error');
+    _ppProcessing = false;
+    document.getElementById('ppSubmitBtn').disabled = false;
+    document.getElementById('ppSubmitBtn').textContent = '⚡ 开始处理';
+    document.getElementById('ppProgress').style.display = 'none';
+  }
+}
+
+async function pollPostProcess(taskId) {
+  for (var i = 0; i < 60; i++) {
+    await new Promise(function(r) { setTimeout(r, 2000); });
+    try {
+      var data = await apiGet('/api/video/post-process/' + taskId);
+      document.getElementById('ppProgBar').style.width = (data.progress || 50) + '%';
+      document.getElementById('ppProgText').textContent = data.status === 'completed' ? '处理完成' : '处理中...';
+      if (data.status === 'completed') {
+        var v = document.getElementById('resultVideo');
+        if (v && data.videoUrl) { v.src = data.videoUrl; v.load(); }
+        closePostProcessModal();
+        toast('视频后处理完成', 'success');
+        _ppProcessing = false;
+        document.getElementById('ppSubmitBtn').disabled = false;
+        document.getElementById('ppSubmitBtn').textContent = '⚡ 开始处理';
+        document.getElementById('ppProgress').style.display = 'none';
+        return;
+      }
+      if (data.status === 'failed') { throw new Error(data.error || '处理失败'); }
+    } catch (e) { throw e; }
+  }
+  throw new Error('处理超时');
 }

@@ -13,6 +13,8 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const cp = require('child_process');
+const os = require('os');
 
 const app = express();
 const PORT = process.env.PORT || 3456;
@@ -23,6 +25,17 @@ const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
 const ATLAS_API_BASE = 'api.atlascloud.ai';
 const FRONTEND_DIR = path.join(__dirname, 'www-seedance');
 const DATA_DIR = path.join(__dirname, 'server', 'data');
+
+// ── 可选：微信 SDK（环境变量未设置时自动跳过） ──
+let wechatRouter = null;
+try {
+  const wechatRouterFn = require('./server/routes/wechat');
+  const wxDeps = { loadDB, saveDB, crypto, jwt, JWT_SECRET };
+  wechatRouter = wechatRouterFn(wxDeps);
+  console.log('  [WX] 微信支付模块已加载');
+} catch (e) {
+  console.log('  [WX] 微信支付模块未加载 (' + e.message + ')');
+}
 
 // ==================== 数据层 ====================
 function loadDB(filename) {
@@ -99,6 +112,12 @@ app.use((req, res, next) => {
   if (++rateLimit[ip].count > 120) return res.status(429).json({ error: '请求过于频繁' });
   next();
 });
+
+// 挂载微信模块（环境变量未配置时自动跳过）
+if (wechatRouter) {
+  app.use('/api/wechat', wechatRouter);
+  console.log('  [WX] 微信支付路由已挂载');
+}
 
 function authMiddleware(req, res, next) {
   const h = req.headers.authorization;
@@ -196,6 +215,36 @@ app.get('/api/user/transactions', authMiddleware, (req, res) => {
   txns.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const total = txns.length;
   res.json({ items: txns.slice((page - 1) * limit, page * limit), total, page, totalPages: Math.ceil(total / limit) });
+});
+
+// ==================== 仪表盘 API ====================
+app.get('/api/dashboard', authMiddleware, (req, res) => {
+  const plans = loadDB('plans.json');
+  const plan = plans.find(p => p.id === (req.user.plan || 'free')) || plans[0];
+  const monthKey = new Date().toISOString().slice(0, 7);
+  const videoUsage = loadDB('video_usage.json');
+  const totalGenerations = videoUsage.filter(u => u.userId === req.user.id).length;
+  const thisMonthGenerations = videoUsage.filter(u => u.userId === req.user.id && u.month === monthKey).length;
+  const history = loadDB('history.json').filter(h => h.userId === req.user.id).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const txns = loadDB('transactions.json').filter(t => t.userId === req.user.id);
+  const totalConsumed = txns.filter(t => t.type === 'consume').reduce((s, t) => s + Math.abs(t.amount), 0);
+  const successCount = history.filter(h => h.status === 'done').length;
+  const failCount = history.filter(h => h.status === 'failed').length;
+  const totalTasks = successCount + failCount;
+  res.json({
+    stats: {
+      totalGenerations, thisMonthGenerations, remainingQuota: Math.max(0, plan.videosPerMonth - thisMonthGenerations),
+      quotaLimit: plan.videosPerMonth, balance: req.user.balance, plan: plan.name,
+      totalConsumed, successRate: totalTasks > 0 ? Math.round(successCount / totalTasks * 100) : 0
+    },
+    recentWorks: history.slice(0, 4).map(h => ({ id: h.id, prompt: h.prompt, videoUrl: h.videoUrl, cost: h.cost, status: h.status, createdAt: h.createdAt })),
+    quickActions: [
+      { id: 'generate', label: '开始创作', icon: '🎬', tab: 'generate', desc: '使用 AI 生成营销视频' },
+      { id: 'templates', label: '浏览模板', icon: '📦', tab: 'templates', desc: '选择电商模板快速开始' },
+      { id: 'assets', label: '素材库', icon: '🗂️', tab: 'assets', desc: '管理图片和视频素材' },
+      { id: 'recharge', label: '充值积分', icon: '💎', tab: 'recharge', desc: '充值获取更多生成次数' }
+    ]
+  });
 });
 
 // ==================== 套餐/配额 API ====================
@@ -395,6 +444,37 @@ app.get('/api/templates/:id', (req, res) => {
   if (!tpl) return res.status(404).json({ error: '模板不存在' });
   res.json(tpl);
 });
+app.post('/api/templates', authMiddleware, (req, res) => {
+  const { name, category, industry, icon, promptTemplate, tips } = req.body;
+  if (!name || !promptTemplate) return res.status(400).json({ error: '名称和提示词模板不能为空' });
+  const tpls = loadDB('templates.json');
+  const tpl = { id: 'tpl-' + crypto.randomUUID().slice(0, 8), name, category: category || 'custom', industry: industry || '通用', icon: icon || '📦', promptTemplate, slots: ['product_name', 'selling_points', 'product_image'], tips: tips || '', defaultParams: { ratio: '9:16', duration: 6, motion: 'medium' }, userId: req.user.id, isSystem: false, usageCount: 0 };
+  tpls.push(tpl);
+  saveDB('templates.json', tpls);
+  res.status(201).json(tpl);
+});
+app.put('/api/templates/:id', authMiddleware, (req, res) => {
+  const tpls = loadDB('templates.json');
+  const idx = tpls.findIndex(t => t.id === req.params.id);
+  if (idx < 0) return res.status(404).json({ error: '模板不存在' });
+  if (tpls[idx].isSystem) return res.status(403).json({ error: '系统模板不可编辑' });
+  if (tpls[idx].userId !== req.user.id && !req.user.isAdmin) return res.status(403).json({ error: '无权限' });
+  ['name', 'category', 'industry', 'icon', 'promptTemplate', 'tips'].forEach(k => {
+    if (req.body[k] !== undefined) tpls[idx][k] = req.body[k];
+  });
+  saveDB('templates.json', tpls);
+  res.json(tpls[idx]);
+});
+app.delete('/api/templates/:id', authMiddleware, (req, res) => {
+  const tpls = loadDB('templates.json');
+  const idx = tpls.findIndex(t => t.id === req.params.id);
+  if (idx < 0) return res.status(404).json({ error: '模板不存在' });
+  if (tpls[idx].isSystem) return res.status(403).json({ error: '系统模板不可删除' });
+  if (tpls[idx].userId !== req.user.id && !req.user.isAdmin) return res.status(403).json({ error: '无权限' });
+  tpls.splice(idx, 1);
+  saveDB('templates.json', tpls);
+  res.json({ message: '已删除' });
+});
 
 // ==================== 历史记录 API ====================
 app.get('/api/history', authMiddleware, (req, res) => {
@@ -403,11 +483,72 @@ app.get('/api/history', authMiddleware, (req, res) => {
 });
 app.post('/api/history', authMiddleware, (req, res) => {
   let hist = loadDB('history.json');
-  const entry = { id: crypto.randomUUID(), userId: req.user.id, mode: req.body.mode || 'text', prompt: req.body.prompt || '', videoUrl: req.body.videoUrl || '', status: req.body.status || 'done', cost: req.body.cost || 36, createdAt: new Date().toISOString() };
+  const entry = { id: crypto.randomUUID(), userId: req.user.id, mode: req.body.mode || 'text', prompt: req.body.prompt || '', videoUrl: req.body.videoUrl || '', status: req.body.status || 'done', cost: req.body.cost || 36, provider: req.body.provider || 'atlas', createdAt: new Date().toISOString() };
   hist.unshift(entry);
   if (hist.length > 500) hist = hist.slice(0, 500);
   saveDB('history.json', hist);
   res.status(201).json(entry);
+});
+
+// ==================== 数据分析 API ====================
+app.get('/api/analytics/dashboard', authMiddleware, (req, res) => {
+  const period = parseInt(req.query.period) || 30; // 天数
+  const since = new Date(Date.now() - period * 86400000).toISOString();
+  const hist = loadDB('history.json').filter(h => h.userId === req.user.id && h.createdAt >= since);
+  const txns = loadDB('transactions.json').filter(t => t.userId === req.user.id && t.createdAt >= since);
+  const videoUsage = loadDB('video_usage.json').filter(u => u.userId === req.user.id && u.createdAt >= since);
+
+  // 每日生成趋势
+  const trendMap = {};
+  for (const v of videoUsage) {
+    const day = v.createdAt.slice(0, 10);
+    trendMap[day] = (trendMap[day] || 0) + 1;
+  }
+  const generationTrend = Object.entries(trendMap).map(([date, count]) => ({ date, count })).sort((a, b) => a.date.localeCompare(b.date));
+
+  // 模型分布 — 从交易记录描述中提取 provider 信息
+  const modelMap = {};
+  for (const t of txns) {
+    if (t.type !== 'consume') continue;
+    const m = (t.desc || '').match(/\((\w+)\)/);
+    const provider = m ? m[1] : 'atlas';
+    modelMap[provider] = (modelMap[provider] || 0) + 1;
+  }
+  const modelDistribution = Object.entries(modelMap).map(([provider, count]) => ({ provider, count }));
+
+  // 成功率
+  const succeeded = hist.filter(h => h.status === 'done').length;
+  const failed = hist.filter(h => h.status === 'failed').length;
+  const total = succeeded + failed;
+  const successRate = total > 0 ? Math.round(succeeded / total * 100) : 100;
+
+  // 每日积分消耗
+  const costMap = {};
+  for (const t of txns) {
+    if (t.type !== 'consume') continue;
+    const day = t.createdAt.slice(0, 10);
+    costMap[day] = (costMap[day] || 0) + Math.abs(t.amount);
+  }
+  const creditConsumption = Object.entries(costMap).map(([date, credits]) => ({ date, credits })).sort((a, b) => a.date.localeCompare(b.date));
+
+  // 高频提示词（取前 5）
+  const promptCount = {};
+  for (const h of hist) {
+    if (!h.prompt) continue;
+    const key = h.prompt.length > 30 ? h.prompt.slice(0, 30) + '...' : h.prompt;
+    promptCount[key] = (promptCount[key] || 0) + 1;
+  }
+  const topPrompts = Object.entries(promptCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([prompt, count]) => ({ prompt, count }));
+
+  // 按小时分布
+  const hourMap = {};
+  for (const h of hist) {
+    const hour = new Date(h.createdAt).getHours();
+    hourMap[hour] = (hourMap[hour] || 0) + 1;
+  }
+  const timeOfDay = Array.from({ length: 24 }, (_, hour) => ({ hour, count: hourMap[hour] || 0 }));
+
+  res.json({ generationTrend, modelDistribution, successRate: { total, succeeded, failed, rate: successRate }, creditConsumption, topPrompts, timeOfDay });
 });
 
 // ==================== 多模型 AI 路由器 ====================
@@ -592,6 +733,14 @@ app.get('/api/image/:id', (req, res) => {
 
 app.post('/api/upload-image', (req, res) => {
   const ct = req.headers['content-type'] || '';
+  // 持久化上传图片到素材库
+  function saveAsset(assetId, imgData, mime) {
+    const assets = loadDB('assets.json');
+    const userId = (req.user && req.user.id) || 'anonymous';
+    assets.unshift({ id: assetId, userId, type: 'image', url: `http://localhost:${PORT}/api/image/${assetId}`, filename: 'upload_' + new Date().toISOString().slice(0,10) + '.png', mime, size: imgData.length, createdAt: new Date().toISOString() });
+    if (assets.length > 500) assets.length = 500;
+    saveDB('assets.json', assets);
+  }
   if (ct.includes('json') && req.body) {
     if (req.body.image) {
       const buf = Buffer.from(req.body.image, 'base64');
@@ -600,6 +749,7 @@ app.post('/api/upload-image', (req, res) => {
       if (buf[0] === 0xFF && buf[1] === 0xD8) mime = 'image/jpeg';
       uploadedImages.set(id, { data: buf, mime });
       setTimeout(() => uploadedImages.delete(id), 300000);
+      saveAsset(id, buf, mime);
       return res.json({ url: `http://localhost:${PORT}/api/image/${id}` });
     }
     if (req.body.url) return res.json({ url: req.body.url });
@@ -613,8 +763,42 @@ app.post('/api/upload-image', (req, res) => {
     let mime = 'image/png';
     uploadedImages.set(id, { data: buf, mime });
     setTimeout(() => uploadedImages.delete(id), 300000);
+    saveAsset(id, buf, mime);
     res.json({ url: `http://localhost:${PORT}/api/image/${id}` });
   });
+});
+
+// ==================== 素材库 API ====================
+app.get('/api/assets', authMiddleware, (req, res) => {
+  let assets = loadDB('assets.json').filter(a => a.userId === req.user.id);
+  const type = req.query.type;
+  if (type && type !== 'all') assets = assets.filter(a => a.type === type);
+  assets.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const page = parseInt(req.query.page) || 1;
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+  const total = assets.length;
+  res.json({ items: assets.slice((page - 1) * limit, page * limit), total, page, totalPages: Math.ceil(total / limit) });
+});
+
+app.delete('/api/assets/:id', authMiddleware, (req, res) => {
+  let assets = loadDB('assets.json');
+  const idx = assets.findIndex(a => a.id === req.params.id && a.userId === req.user.id);
+  if (idx < 0) return res.status(404).json({ error: '素材不存在' });
+  assets.splice(idx, 1);
+  saveDB('assets.json', assets);
+  res.json({ message: '已删除' });
+});
+
+app.post('/api/assets/register', authMiddleware, (req, res) => {
+  const assets = loadDB('assets.json');
+  assets.unshift({
+    id: crypto.randomUUID(), userId: req.user.id, type: 'video',
+    url: req.body.url || '', filename: 'generated_' + new Date().toISOString().slice(0,10) + '.mp4',
+    mime: 'video/mp4', size: req.body.size || 0, createdAt: new Date().toISOString()
+  });
+  if (assets.length > 500) assets.length = 500;
+  saveDB('assets.json', assets);
+  res.status(201).json({ message: '已注册' });
 });
 
 app.all('/api/v1/*', (req, res) => {
@@ -704,6 +888,173 @@ app.post('/api/scrape-product', authMiddleware, (req, res) => {
     });
     extRes.on('error', () => { res.json({ url, domain, title: info.title, description: info.tip, platform: info.platform, autoFilled: false }); });
   }).on('error', () => { res.json({ url, domain, title: info.title, description: info.tip, platform: info.platform, autoFilled: false }); });
+});
+
+// ==================== 视频后处理 (FFmpeg) ====================
+const ffmpegAvailable = (() => {
+  try { cp.execFileSync('ffmpeg', ['-version'], { timeout: 5000, stdio: 'ignore' }); return true; }
+  catch (e) { return false; }
+})();
+if (ffmpegAvailable) console.log('  [FFmpeg] 视频后处理已启用');
+else console.log('  [FFmpeg] 未检测到，后处理功能暂时不可用（安装: apt install ffmpeg 或 brew install ffmpeg）');
+
+const postProcessTasks = new Map();
+
+// BGM 列表（服务端内置的无版权音频信息）
+app.get('/api/video/bgm-list', authMiddleware, (req, res) => {
+  res.json([
+    { id: 'none', name: '无背景音乐', duration: 0 },
+    { id: 'bgm-upbeat', name: '活力轻快', duration: 30, desc: '适合促销/快节奏' },
+    { id: 'bgm-cinematic', name: '电影感', duration: 30, desc: '适合品牌/大片' },
+    { id: 'bgm-relaxing', name: '舒缓放松', duration: 30, desc: '适合生活方式/场景' },
+    { id: 'bgm-corporate', name: '商务专业', duration: 30, desc: '适合企业/B2B' }
+  ]);
+});
+
+// 创建后处理任务
+app.post('/api/video/post-process', authMiddleware, (req, res) => {
+  if (!ffmpegAvailable) return res.status(503).json({ error: '视频后处理功能暂不可用，服务器未安装 FFmpeg。请执行: apt install ffmpeg 或 brew install ffmpeg' });
+  const { videoUrl, operations } = req.body;
+  if (!videoUrl || !operations || !operations.length) return res.status(400).json({ error: '请指定视频和至少一个处理操作' });
+
+  const taskId = crypto.randomUUID();
+  const outDir = path.join(os.tmpdir(), 'seedance_post');
+  fs.mkdirSync(outDir, { recursive: true });
+  const outPath = path.join(outDir, taskId + '.mp4');
+
+  postProcessTasks.set(taskId, { status: 'processing', progress: 0, outPath });
+
+  // 构建 FFmpeg 命令
+  const args = ['-y'];
+  // 输入
+  args.push('-i', videoUrl);
+
+  // 构建 filter_complex
+  const filters = [];
+  for (const op of operations) {
+    if (op.type === 'trim') {
+      if (op.params.start) args.push('-ss', String(op.params.start));
+      if (op.params.duration) args.push('-t', String(op.params.duration));
+    } else if (op.type === 'resize') {
+      const sizes = { '9:16': '1080:1920', '16:9': '1920:1080', '1:1': '1080:1080', '3:4': '1080:1440' };
+      const size = sizes[op.params.ratio] || '1080:1920';
+      filters.push('scale=' + size.replace(':', ':'));
+    } else if (op.type === 'watermark') {
+      filters.push('drawtext=text=Seedance Studio:fontcolor=white@0.5:fontsize=24:x=w-tw-20:y=h-th-20');
+    }
+  }
+  if (filters.length) args.push('-vf', filters.join(','));
+
+  args.push('-c:v', 'libx264', '-preset', 'fast', '-c:a', 'aac', outPath);
+
+  const proc = cp.spawn('ffmpeg', args, { timeout: 120000 });
+  let stderr = '';
+
+  proc.stderr.on('data', d => { stderr += d.toString(); });
+  proc.on('close', code => {
+    if (code === 0) {
+      postProcessTasks.set(taskId, { status: 'completed', progress: 100, outPath });
+      // 将处理后的视频注册到上传图片服务
+      const vid = crypto.randomBytes(16).toString('hex');
+      const buf = fs.readFileSync(outPath);
+      uploadedImages.set(vid, { data: buf, mime: 'video/mp4' });
+      setTimeout(() => uploadedImages.delete(vid), 600000);
+      postProcessTasks.get(taskId).serveUrl = 'http://localhost:' + PORT + '/api/image/' + vid;
+    } else {
+      postProcessTasks.set(taskId, { status: 'failed', progress: 0, error: stderr.slice(-200) });
+    }
+  });
+  proc.on('error', e => {
+    postProcessTasks.set(taskId, { status: 'failed', progress: 0, error: e.message });
+  });
+
+  res.json({ taskId, status: 'processing' });
+});
+
+// 查询后处理任务状态
+app.get('/api/video/post-process/:taskId', authMiddleware, (req, res) => {
+  const task = postProcessTasks.get(req.params.taskId);
+  if (!task) return res.status(404).json({ error: '任务不存在' });
+  res.json(task.status === 'completed'
+    ? { status: 'completed', videoUrl: task.serveUrl || task.outPath }
+    : { status: task.status, progress: task.progress, error: task.error });
+});
+
+// ==================== 对外 API 服务 (API Key 鉴权) ====================
+function apiKeyAuth(req, res, next) {
+  const h = req.headers.authorization;
+  if (!h || !h.startsWith('Bearer sk-')) return res.status(401).json({ error: '需要 API Key 鉴权，使用 Authorization: Bearer sk-xxx' });
+  const key = h.split(' ')[1];
+  const keys = loadDB('api_keys.json');
+  const keyData = keys.find(k => k.key === key && k.isActive);
+  if (!keyData) return res.status(403).json({ error: '无效或已吊销的 API Key' });
+  req.apiKeyOwner = loadDB('users.json').find(u => u.id === keyData.userId);
+  if (!req.apiKeyOwner) return res.status(403).json({ error: '用户不存在' });
+  next();
+}
+
+app.post('/api/v1/video/generate', apiKeyAuth, (req, res) => {
+  req.user = req.apiKeyOwner;
+  const quota = checkQuota(req.apiKeyOwner);
+  if (!quota.allowed) return res.status(402).json({ error: '本月额度已用完，请升级套餐', quota });
+  const cost = 36;
+  if (req.apiKeyOwner.balance < cost) return res.status(402).json({ error: '积分不足', balance: req.apiKeyOwner.balance, cost });
+  const users = loadDB('users.json');
+  const uidx = users.findIndex(u => u.id === req.apiKeyOwner.id);
+  users[uidx].balance -= cost;
+  saveDB('users.json', users);
+  recordUsage(req.apiKeyOwner.id);
+  const txns = loadDB('transactions.json');
+  txns.push({ id: crypto.randomUUID(), userId: req.apiKeyOwner.id, type: 'consume', amount: -cost, desc: '对外API-视频生成', balance: users[uidx].balance, createdAt: new Date().toISOString() });
+  saveDB('transactions.json', txns);
+  req.body.authHeader = req.headers['authorization'] || '';
+  generateAuto(req.body, (code, data) => {
+    if (code >= 400) { users[uidx].balance += cost; saveDB('users.json', users); }
+    res.status(code).set('Content-Type', 'application/json').send(data);
+  });
+});
+
+app.get('/api/v1/video/status/:taskId', apiKeyAuth, (req, res) => {
+  const { taskId } = req.params;
+  const provider = req.query.provider || 'atlas';
+  if (provider === 'atlas') {
+    proxyToAtlas('GET', '/model/prediction/' + taskId, '', null, req.headers['authorization'] || '', (code, data) => {
+      res.status(code).set('Content-Type', 'application/json').send(data);
+    });
+  } else {
+    pollWithProvider(provider, taskId, (code, data) => {
+      res.status(code).set('Content-Type', 'application/json').send(data);
+    });
+  }
+});
+
+// ==================== 管理员 — API Key 管理 ====================
+app.get('/api/admin/api-keys', authMiddleware, adminMiddleware, (req, res) => {
+  const keys = loadDB('api_keys.json');
+  const users = loadDB('users.json');
+  res.json(keys.map(k => ({ ...k, username: (users.find(u => u.id === k.userId) || {}).username || '未知' })));
+});
+
+app.post('/api/admin/api-keys', authMiddleware, adminMiddleware, (req, res) => {
+  const { name, userId } = req.body;
+  const targetUserId = userId || req.user.id;
+  const users = loadDB('users.json');
+  if (!users.find(u => u.id === targetUserId)) return res.status(404).json({ error: '用户不存在' });
+  const key = 'sk-' + crypto.randomBytes(24).toString('hex');
+  const keys = loadDB('api_keys.json');
+  keys.push({ key, userId: targetUserId, name: name || 'Default', rateLimit: 60, isActive: true, createdAt: new Date().toISOString() });
+  saveDB('api_keys.json', keys);
+  res.status(201).json({ key, message: 'API Key 已创建，请妥善保管' });
+});
+
+app.post('/api/admin/api-keys/:key/revoke', authMiddleware, adminMiddleware, (req, res) => {
+  const keys = loadDB('api_keys.json');
+  const idx = keys.findIndex(k => k.key === req.params.key);
+  if (idx < 0) return res.status(404).json({ error: 'API Key 不存在' });
+  keys[idx].isActive = false;
+  keys[idx].revokedAt = new Date().toISOString();
+  saveDB('api_keys.json', keys);
+  res.json({ message: 'API Key 已吊销' });
 });
 
 // ==================== 健康检查 ====================

@@ -46,6 +46,7 @@ async function renderAdminPanel() {
       }
       document.getElementById('adminOrderList').innerHTML = orderHtml || '<p style="color:var(--text-secondary);">暂无订单</p>';
     } catch (e) { document.getElementById('adminOrderList').innerHTML = '<p style="color:var(--error);">加载失败</p>'; }
+    loadApiKeys();
   } catch (e) { toast('加载管理面板失败', 'error'); }
 }
 
@@ -87,4 +88,41 @@ function filterAdminOrders(q) {
   for (var i = 0; i < rows.length; i++) {
     rows[i].style.display = !kw || rows[i].getAttribute('data-admin-order').toLowerCase().includes(kw) ? '' : 'none';
   }
+}
+
+async function loadApiKeys() {
+  try {
+    var apiKeys = await apiGet('/api/admin/api-keys');
+    var html = '<div style="margin-bottom:8px;display:flex;gap:8px;"><input type="text" id="newApiKeyName" placeholder="Key 名称" style="flex:1;font-size:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-xs);color:var(--text-primary);padding:6px 10px;"><button class="btn btn-primary btn-xs" onclick="createApiKey()">+ 创建</button></div>';
+    for (var i = 0; i < apiKeys.length; i++) {
+      var ak = apiKeys[i];
+      var masked = ak.key.slice(0, 8) + '...' + ak.key.slice(-4);
+      html += '<div class="admin-user-row">'
+        + '<span style="font-size:11px;">' + escHtml(ak.name || 'Key') + '</span>'
+        + '<code style="font-size:10px;color:var(--accent);">' + masked + '</code>'
+        + '<span style="font-size:10px;">' + escHtml(ak.username || '') + '</span>'
+        + (ak.isActive ? '<span style="font-size:10px;color:var(--success);">活跃</span>' : '<span style="font-size:10px;color:var(--error);">已吊销</span>')
+        + (ak.isActive ? '<button class="btn btn-xs" onclick="revokeApiKey(\'' + ak.key + '\')" style="color:var(--error);">吊销</button>' : '')
+        + '</div>';
+    }
+    document.getElementById('adminApiKeyList').innerHTML = html || '<p style="color:var(--text-secondary);">暂无 API Key</p>';
+  } catch (e) { document.getElementById('adminApiKeyList').innerHTML = '<p style="color:var(--text-secondary);">加载失败</p>'; }
+}
+
+async function createApiKey() {
+  var name = document.getElementById('newApiKeyName')?.value?.trim() || 'Default';
+  try {
+    var res = await apiPost('/api/admin/api-keys', { name: name });
+    toast('API Key 已创建！请复制保存: ' + res.key, 'success');
+    loadApiKeys();
+  } catch (e) { toast('创建失败: ' + e.message, 'error'); }
+}
+
+async function revokeApiKey(key) {
+  if (!confirm('确定吊销该 API Key？吊销后立即失效。')) return;
+  try {
+    await apiPost('/api/admin/api-keys/' + key + '/revoke', {});
+    toast('API Key 已吊销', 'success');
+    loadApiKeys();
+  } catch (e) { toast('吊销失败: ' + e.message, 'error'); }
 }

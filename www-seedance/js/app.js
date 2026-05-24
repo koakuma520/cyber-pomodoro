@@ -1,6 +1,6 @@
 // Seedance Studio Pro — 应用入口和初始化
 var _appInited = false;
-var _currentTab = 'generate';
+var _currentTab = 'dashboard';
 var _imageModeActive = false;
 
 function switchTab(tab) {
@@ -10,7 +10,13 @@ function switchTab(tab) {
   var panel = document.getElementById('tab-' + tab);
   if (panel) panel.classList.add('active');
 
-  if (tab === 'drama') {
+  if (tab === 'dashboard') {
+    initDashboard();
+  } else if (tab === 'datacenter') {
+    initAnalytics();
+  } else if (tab === 'assets') {
+    initAssets();
+  } else if (tab === 'drama') {
     S.mode = 'drama';
     if (typeof dramaInit === 'function') dramaInit();
   } else if (tab === 'templates') {
@@ -96,6 +102,7 @@ async function initApp() {
 
   loadHist(); loadTemplates(); loadQuota(); setStat('ready');
   setupTemplateDelegation();
+  initDashboard();
 
   var pi = document.getElementById('promptInput');
   if (pi) {
@@ -112,6 +119,16 @@ async function initApp() {
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
+  // 微信 OAuth 回调 — URL 参数 token
+  var urlParams = new URLSearchParams(window.location.search);
+  var wxToken = urlParams.get('wx_token');
+  if (wxToken) {
+    AUTH.token = wxToken;
+    localStorage.setItem(AUTH.tokenKey, wxToken);
+    // 清理 URL 参数
+    var newUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, newUrl);
+  }
   await checkAuth();  // 静默检测登录状态，不拦截浏览
   initApp(); dramaInit();
 });

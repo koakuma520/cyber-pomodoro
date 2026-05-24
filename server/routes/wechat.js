@@ -113,7 +113,7 @@ module.exports = function (deps) {
       const payParams = await wx.createUnifiedOrder({
         orderId,
         totalAmount,
-        body: '金鼎囍铺-婚礼订单',
+        body: 'Seedance Studio Pro-视频生成',
         openid,
         ip: req.ip || req.connection.remoteAddress
       });
@@ -144,15 +144,32 @@ module.exports = function (deps) {
           const orderId = notifyData.out_trade_no;
           console.log('[WX] 支付成功:', orderId, notifyData.total_fee / 100, '元');
 
-          // 更新订单状态
+          // 更新订单状态 → 自动审批
           const orders = loadDB('orders.json');
-          const order = orders.find(o => o.id === orderId);
-          if (order) {
-            order.status = 'paid';
+          const idx = orders.findIndex(o => o.id === orderId);
+          if (idx >= 0) {
+            const order = orders[idx];
+            order.status = 'approved';
             order.paidAt = new Date().toISOString();
+            order.approvedAt = new Date().toISOString();
             order.updatedAt = new Date().toISOString();
             order.wxTransactionId = notifyData.transaction_id;
             saveDB('orders.json', orders);
+            // 自动执行套餐激活/积分充值
+            const users = loadDB('users.json');
+            const uidx = users.findIndex(u => u.id === order.userId);
+            if (uidx >= 0) {
+              if (order.type === 'recharge') {
+                users[uidx].balance += (order.credits || 0);
+                saveDB('users.json', users);
+                const txns = loadDB('transactions.json');
+                txns.push({ id: crypto.randomUUID(), userId: users[uidx].id, type: 'recharge', amount: order.credits, desc: '微信支付到账 ¥' + order.amount, balance: users[uidx].balance, createdAt: new Date().toISOString() });
+                saveDB('transactions.json', txns);
+              } else {
+                users[uidx].plan = order.plan;
+                saveDB('users.json', users);
+              }
+            }
           }
         }
 
