@@ -169,8 +169,8 @@
             <button class="segment active" data-model="fast" onclick="pickModel(this,'fast')">Fast</button>
             <button class="segment" data-model="standard" onclick="pickModel(this,'standard')">Pro</button>
           </div>
-          <div class="quality-price" id="qualityPrice">1 积分/次</div>
-          <div class="cost-detail" id="costDetail"></div>
+          <div class="quality-price" id="qualityPrice"><span class="price-num">30</span> 积分/次 <span class="price-tier tier-standard">6分/秒</span></div>
+          <div class="cost-detail" id="costDetail">5秒 · 720p · Fast</div>
         </div>
 
         <!-- Parameters -->
@@ -343,7 +343,7 @@
         <button class="generate-btn" id="genBtn" onclick="generate()">
           <span class="gen-btn-icon">🚀</span>
           <span class="gen-btn-text">开始生成视频</span>
-          <span class="gen-btn-cost" id="costDisplay">约 <span id="costNum">1 积分</span></span>
+          <span class="gen-btn-cost" id="costDisplay">消耗 <span id="costNum">30 积分</span></span>
         </button>
         <div class="remain-hint" id="remainCount"></div>
       </main>
@@ -564,12 +564,58 @@
 
 <!-- Recharge Modal -->
 <div class="modal-overlay" id="rechargeModal" onclick="if(event.target===this)closeRechargeModal()">
-  <div class="modal-content" style="max-width:560px;">
+  <div class="modal-content" style="max-width:680px;">
     <div class="modal-header"><h2>💎 充值积分</h2><button class="modal-close" onclick="closeRechargeModal()">✕</button></div>
     <div class="modal-body">
-      <p class="text-muted text-sm" style="margin-bottom:16px;">套餐内含视频额度用完后可在此补充。套餐内每条视频￥1.3-2.0，充值包￥2.1-2.9/条，订阅更划算。</p>
+      <p class="text-muted text-sm" id="rechargeRate" style="margin-bottom:16px;">720p = <strong>6积分/秒</strong>(¥0.6/秒) · 1080p = <strong>12积分/秒</strong>(¥1.2/秒) · 1积分=¥0.1</p>
       <div class="recharge-grid" id="rechargeGrid"></div>
-      <p class="text-muted text-xs mt-8">流程：选择金额 → 创建订单 → 微信扫码支付 → 输入交易号 → 管理员验证到账</p>
+
+      <!-- 竞品对比表 -->
+      <div class="cmp-table-wrap" style="margin:20px 0;background:var(--bg-card);border-radius:12px;overflow-x:auto;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+        <table class="cmp-table">
+          <thead><tr><th>对比维度</th><th style="color:var(--accent);">Seedance Pro</th><th>即梦</th><th>造点 AI</th><th>可灵/通义</th></tr></thead>
+          <tbody>
+            <tr><td>🎯 电商专用</td><td class="cmp-yes">✅ 商品链接→脚本→视频</td><td class="cmp-no">❌ 通用生成</td><td class="cmp-no">❌ 通用生成</td><td class="cmp-no">❌ 通用生成</td></tr>
+            <tr><td>📦 批量生成工作台</td><td class="cmp-yes">✅ 多场景并发</td><td class="cmp-no">❌ 单条生成</td><td class="cmp-no">❌ 单条生成</td><td class="cmp-no">❌ 单条生成</td></tr>
+            <tr><td>🎬 电商模板库</td><td class="cmp-yes">✅ 50+(开箱/对比/促销)</td><td class="cmp-no">❌ 无</td><td class="cmp-no">❌ 基础模板</td><td class="cmp-no">❌ 无</td></tr>
+            <tr><td>📈 数据闭环</td><td class="cmp-yes">✅ 播放/转化率追踪</td><td class="cmp-no">❌ 无</td><td class="cmp-no">❌ 无</td><td class="cmp-no">❌ 无</td></tr>
+            <tr><td>🔗 一键分发多平台</td><td class="cmp-yes">✅ 抖音/快手/TikTok</td><td class="cmp-no">❌ 无</td><td class="cmp-no">❌ 无</td><td class="cmp-no">❌ 无</td></tr>
+            <tr><td>💳 最低起充</td><td style="font-weight:700;color:var(--accent);">¥29(300积分)</td><td>会员制 ¥659/年起</td><td>¥10(100积分)</td><td>会员制/API后付费</td></tr>
+            <tr><td>720p 每秒成本</td><td style="font-weight:700;color:var(--accent);">¥0.6(≈3元/5s)</td><td>约¥0.335(年付)</td><td>约¥0.2(积分)</td><td>¥0.5~0.8</td></tr>
+            <tr><td>1080p 每秒成本</td><td style="font-weight:700;color:var(--accent);">¥1.2</td><td>约¥0.67</td><td>不支持</td><td>¥0.7~1.0</td></tr>
+            <tr><td>🎁 每日签到</td><td class="cmp-yes">✅ 每日领取积分</td><td class="cmp-no">❌</td><td class="cmp-yes">✅</td><td>可灵每日免费</td></tr>
+            <tr><td>👥 团队/API</td><td class="cmp-yes">✅ 企业版+开放API</td><td class="cmp-no">❌</td><td class="cmp-no">❌</td><td>通义有API</td></tr>
+          </tbody>
+        </table>
+        <div style="padding:10px 14px;background:#fefce8;font-size:10px;color:#854d0e;text-align:center;">* 价格基于各平台公开信息(2026年5月)。Seedance Pro 积分按秒扣费，无隐藏费用。</div>
+      </div>
+
+      <!-- 支付验证区 -->
+      <div class="verify-section" style="margin-top:16px;background:var(--bg-input);border-radius:12px;padding:16px;">
+        <div style="font-weight:600;margin-bottom:12px;">📋 支付验证 · 三步到账</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">
+          1. 微信扫码支付所选金额 → 2. 微信账单复制交易单号 → 3. 粘贴下方提交
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="text" id="verifyTxnId" placeholder="粘贴微信交易单号（如 4200001234...）" style="flex:1;padding:10px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:13px;background:var(--bg-card);color:var(--text-primary);">
+          <input type="number" id="verifyAmount" placeholder="金额" style="width:80px;padding:10px;border:1px solid var(--border-color);border-radius:8px;font-size:13px;background:var(--bg-card);color:var(--text-primary);" readonly>
+          <button class="btn btn-primary btn-sm" onclick="submitRechargeOrder()" style="white-space:nowrap;">提交到账</button>
+        </div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:8px;">
+          📱 微信 → 我 → 服务 → 钱包 → 账单 → 点击交易 → 复制商户单号 | ⏱ 工作日15分钟内到账
+        </div>
+      </div>
+
+      <!-- 订阅vs充值对比 -->
+      <div class="compare-table" style="margin-top:16px;background:#fefce8;border-radius:12px;padding:14px;font-size:12px;">
+        <div style="font-weight:600;margin-bottom:8px;">🔄 积分充值 vs 订阅套餐</div>
+        <table style="width:100%;border-collapse:collapse;font-size:11px;">
+          <tr style="border-bottom:1px solid #fde047;"><th style="text-align:left;padding:6px 4px;">场景</th><th style="text-align:left;padding:6px 4px;">推荐</th><th style="text-align:left;padding:6px 4px;">理由</th></tr>
+          <tr style="border-bottom:1px solid #fef3c7;"><td style="padding:6px 4px;">每月稳定50~300条</td><td style="padding:6px 4px;">✅ 订阅套餐</td><td style="padding:6px 4px;">含模板库/数据面板，单条成本更低</td></tr>
+          <tr style="border-bottom:1px solid #fef3c7;"><td style="padding:6px 4px;">偶尔使用&lt;20条/月</td><td style="padding:6px 4px;">✅ 积分充值</td><td style="padding:6px 4px;">无月费，随用随扣</td></tr>
+          <tr><td style="padding:6px 4px;">需1080p或长视频</td><td style="padding:6px 4px;">✅ 两者互补</td><td style="padding:6px 4px;">订阅基础+积分升级画质</td></tr>
+        </table>
+      </div>
     </div>
   </div>
 </div>

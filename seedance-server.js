@@ -25,14 +25,9 @@ const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
 const ATLAS_API_BASE = 'api.atlascloud.ai';
 const FRONTEND_DIR = path.join(__dirname, 'www-seedance');
 const DATA_DIR = path.join(__dirname, 'server', 'data');
-// 定价价格表 (模型 → 分辨率 → 时长 → 积分)
-const PRICE_TABLE = {
-  fast: { '720p': { '5': 1, '8': 1, '10': 2 }, '1080p': { '5': 2, '8': 2, '10': 3 } },
-  standard: { '720p': { '5': 2, '8': 3, '10': 4 }, '1080p': { '5': 3, '8': 5, '10': 6 } }
-};
+// 按秒计费: 720p=6积分/秒, 1080p=12积分/秒 (1积分=¥0.1)
 function calcGenCost(model, duration, resolution) {
-  const t = PRICE_TABLE;
-  return (t[model] && t[model][resolution] && t[model][resolution][String(duration)]) || 1;
+  return parseInt(duration) * (resolution === '1080p' ? 12 : 6);
 }
 
 // ── 可选：微信 SDK（环境变量未设置时自动跳过） ──
@@ -63,24 +58,24 @@ function seedAll() {
     const adminHash = bcrypt.hashSync(ADMIN_PASS, BCRYPT_ROUNDS);
     const testHash = bcrypt.hashSync('123456', BCRYPT_ROUNDS);
     users = [
-      { id: 'seed-admin-001', username: ADMIN_USER, passwordHash: adminHash, balance: 50, plan: 'pro', isAdmin: true, createdAt: new Date().toISOString() },
-      { id: 'seed-test-001', username: 'test', passwordHash: testHash, balance: 10, plan: 'personal', isAdmin: false, createdAt: new Date().toISOString() }
+      { id: 'seed-admin-001', username: ADMIN_USER, passwordHash: adminHash, balance: 3000, plan: 'pro', isAdmin: true, createdAt: new Date().toISOString() },
+      { id: 'seed-test-001', username: 'test', passwordHash: testHash, balance: 300, plan: 'personal', isAdmin: false, createdAt: new Date().toISOString() }
     ];
     saveDB('users.json', users);
     saveDB('transactions.json', [
-      { id: 'txn-seed-1', userId: 'seed-admin-001', type: 'claim', amount: 50, desc: '管理员初始积分', balance: 50, createdAt: new Date().toISOString() },
-      { id: 'txn-seed-2', userId: 'seed-test-001', type: 'claim', amount: 10, desc: '测试账号初始积分', balance: 10, createdAt: new Date().toISOString() }
+      { id: 'txn-seed-1', userId: 'seed-admin-001', type: 'claim', amount: 3000, desc: '管理员初始积分', balance: 3000, createdAt: new Date().toISOString() },
+      { id: 'txn-seed-2', userId: 'seed-test-001', type: 'claim', amount: 300, desc: '测试账号初始积分', balance: 300, createdAt: new Date().toISOString() }
     ]);
     console.log('  [Seed] 初始账号: admin/' + ADMIN_PASS + '  test/123456');
   }
   let plans = loadDB('plans.json');
   if (plans.length === 0) {
     plans = [
-      { id: 'free', name: '免费版', price: 0, creditsPerMonth: 5, watermark: true, desc: '5条/月，带水印，体验AI视频生成' },
-      { id: 'personal', name: '个人版', price: 99, creditsPerMonth: 50, watermark: false, desc: '50条/月，适合个体卖家' },
-      { id: 'pro', name: '专业版', price: 499, creditsPerMonth: 300, watermark: false, desc: '300条/月，去水印+数据面板，中小卖家' },
-      { id: 'enterprise', name: '企业版', price: 1999, creditsPerMonth: 1500, watermark: false, desc: '1500条/月，API+团队协作，大卖家/代运营' },
-      { id: 'custom', name: '定制版', price: 5000, creditsPerMonth: 5000, watermark: false, desc: '私有化部署+专属模型，品牌方/MCN（面议）' }
+      { id: 'free', name: '免费版', price: 0, creditsPerMonth: 150, watermark: true, desc: '约5条720p视频/月，带水印' },
+      { id: 'personal', name: '个人版', price: 99, creditsPerMonth: 1500, watermark: false, desc: '约50条720p视频/月，适合个体卖家' },
+      { id: 'pro', name: '专业版', price: 499, creditsPerMonth: 9000, watermark: false, desc: '约300条720p/月，去水印+数据面板' },
+      { id: 'enterprise', name: '企业版', price: 1999, creditsPerMonth: 45000, watermark: false, desc: '约1500条720p/月，API+团队' },
+      { id: 'custom', name: '定制版', price: 5000, creditsPerMonth: 150000, watermark: false, desc: '私有化部署+专属模型（面议）' }
     ];
     saveDB('plans.json', plans);
   }
@@ -154,11 +149,11 @@ app.post('/api/auth/register', async (req, res) => {
     if (password.length < 4) return res.status(400).json({ error: '密码至少4个字符' });
     const users = loadDB('users.json');
     if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) return res.status(409).json({ error: '用户名已存在' });
-    const user = { id: crypto.randomUUID(), username, passwordHash: await bcrypt.hash(password, BCRYPT_ROUNDS), balance: 5, plan: 'free', isAdmin: false, createdAt: new Date().toISOString() };
+    const user = { id: crypto.randomUUID(), username, passwordHash: await bcrypt.hash(password, BCRYPT_ROUNDS), balance: 150, plan: 'free', isAdmin: false, createdAt: new Date().toISOString() };
     users.push(user);
     saveDB('users.json', users);
     const txns = loadDB('transactions.json');
-    txns.push({ id: crypto.randomUUID(), userId: user.id, type: 'claim', amount: 5, desc: '新用户注册赠送', balance: 5, createdAt: new Date().toISOString() });
+    txns.push({ id: crypto.randomUUID(), userId: user.id, type: 'claim', amount: 150, desc: '新用户注册赠送（约5条720p视频）', balance: 150, createdAt: new Date().toISOString() });
     saveDB('transactions.json', txns);
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
     const { passwordHash: _, ...safe } = user;
@@ -193,7 +188,7 @@ app.post('/api/user/recharge', authMiddleware, adminMiddleware, (req, res) => {
   const users = loadDB('users.json');
   const idx = users.findIndex(u => u.id === targetId);
   if (idx < 0) return res.status(404).json({ error: '用户不存在' });
-  const credits = Math.round(yuan * 0.6);
+  const credits = Math.round(yuan * 10);
   users[idx].balance += credits;
   saveDB('users.json', users);
   const txns = loadDB('transactions.json');
@@ -209,11 +204,11 @@ app.post('/api/user/claim-free', authMiddleware, (req, res) => {
     return res.status(400).json({ error: '今天已领取过' });
   const users = loadDB('users.json');
   const idx = users.findIndex(u => u.id === req.user.id);
-  users[idx].balance += 2;
+  users[idx].balance += 30;
   saveDB('users.json', users);
-  txns.push({ id: crypto.randomUUID(), userId: req.user.id, type: 'claim', amount: 2, desc: '每日免费领取', balance: users[idx].balance, createdAt: new Date().toISOString() });
+  txns.push({ id: crypto.randomUUID(), userId: req.user.id, type: 'claim', amount: 30, desc: '每日免费领取（1条720p视频）', balance: users[idx].balance, createdAt: new Date().toISOString() });
   saveDB('transactions.json', txns);
-  res.json({ balance: users[idx].balance, message: '领取成功 +2积分' });
+  res.json({ balance: users[idx].balance, message: '领取成功 +30积分（约1条720p视频）' });
 });
 
 app.get('/api/user/transactions', authMiddleware, (req, res) => {
@@ -312,10 +307,14 @@ function renewMonthlyCredits(user) {
 // ==================== 支付 API ====================
 // 获取充值产品列表
 app.get('/api/recharge-products', (req, res) => {
+  // 1积分=¥0.1, 720p=6积分/秒, 1080p=12积分/秒. 格式: {id,amount,baseCredits,bonus,totalCredits,name,desc,icon}
   res.json([
-    { id: 'r29', name: '10 条视频', amount: 29, credits: 10, desc: '￥2.9/条，适合少量补充', icon: '⭐' },
-    { id: 'r99', name: '40 条视频', amount: 99, credits: 40, desc: '￥2.5/条，灵活补充', icon: '💎' },
-    { id: 'r299', name: '140 条视频', amount: 299, credits: 140, desc: '￥2.1/条，超值', icon: '👑' }
+    { id: 'r29', amount: 29, credits: 300, bonus: 10, desc: '约10条720p视频', icon: '🆕', badge: '尝鲜包' },
+    { id: 'r99', amount: 99, credits: 1050, bonus: 60, desc: '约35条720p视频', icon: '⭐', badge: '热门推荐' },
+    { id: 'r299', amount: 299, credits: 3290, bonus: 300, desc: '约109条720p视频', icon: '💎', badge: '省心包' },
+    { id: 'r499', amount: 499, credits: 5690, bonus: 700, desc: '约189条720p视频', icon: '🔥', badge: '超值包' },
+    { id: 'r999', amount: 999, credits: 11490, bonus: 1500, desc: '约383条720p视频', icon: '👥', badge: '团队优选' },
+    { id: 'r1999', amount: 1999, credits: 23990, bonus: 4000, desc: '约799条720p视频', icon: '🚀', badge: '企业专享' }
   ]);
 });
 
@@ -340,9 +339,12 @@ app.post('/api/orders', authMiddleware, (req, res) => {
 // 创建充值订单
 app.post('/api/recharge-orders', authMiddleware, (req, res) => {
   const products = [
-    { id: 'r29', amount: 29, credits: 10 },
-    { id: 'r99', amount: 99, credits: 40 },
-    { id: 'r299', amount: 299, credits: 140 }
+    { id: 'r29', amount: 29, credits: 300 },
+    { id: 'r99', amount: 99, credits: 1050 },
+    { id: 'r299', amount: 299, credits: 3290 },
+    { id: 'r499', amount: 499, credits: 5690 },
+    { id: 'r999', amount: 999, credits: 11490 },
+    { id: 'r1999', amount: 1999, credits: 23990 }
   ];
   const prod = products.find(p => p.id === req.body.productId);
   if (!prod) return res.status(400).json({ error: '无效充值产品' });

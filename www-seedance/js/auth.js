@@ -142,6 +142,7 @@ async function claimFree() {
 var _pendingOrder = null;
 
 // --- 充值 Modal ---
+var _rechargeSelected = null;
 async function rechargeModal() {
   if (!requireAuth()) return;
   try {
@@ -151,17 +152,53 @@ async function rechargeModal() {
     var html = '';
     for (var i = 0; i < products.length; i++) {
       var p = products[i];
-      html += '<div class="recharge-card' + (i === 2 ? ' featured' : '') + '" onclick="createRechargeOrder(\'' + p.id + '\', ' + p.amount + ', ' + p.credits + ', \'' + p.name + '\')">'
-        + (p.desc.includes('推荐') ? '<span class="rc-badge">推荐</span>' : '')
+      var v720p = Math.floor(p.credits / 30); // 720p/5s = 30积分
+      var v1080p = Math.floor(p.credits / 60); // 1080p/5s = 60积分
+      html += '<div class="recharge-card' + (i === 1 ? ' featured' : '') + '" data-id="' + p.id + '" data-amount="' + p.amount + '" data-credits="' + p.credits + '" onclick="selectRechargeCard(this)">'
+        + '<span class="rc-badge">' + (p.badge || '') + '</span>'
         + '<span class="rc-icon">' + (p.icon || '⭐') + '</span>'
-        + '<div class="rc-name">' + p.name + '</div>'
-        + '<div class="rc-desc">' + p.desc + '</div>'
-        + '<div class="rc-price">¥' + p.amount + '<span class="unit"> / ' + p.credits + '分</span></div>'
+        + '<div class="rc-name">¥' + p.amount + '</div>'
+        + '<div class="rc-credits">' + p.credits.toLocaleString() + ' 积分</div>'
+        + '<div class="rc-bonus">含赠送 ' + (p.bonus || 0) + ' 积分</div>'
+        + '<div class="rc-divider"></div>'
+        + '<div class="rc-meta">🎬 可生成 <strong>' + v720p + '</strong> 条 720p/5s 视频</div>'
+        + '<div class="rc-meta">🎬 或 <strong>' + v1080p + '</strong> 条 1080p/5s 视频</div>'
         + '</div>';
     }
     grid.innerHTML = html;
+    // 汇率说明
+    var rateEl = document.getElementById('rechargeRate');
+    if (rateEl) rateEl.innerHTML = '720p = <strong>6积分/秒</strong>(¥0.6/秒) · 1080p = <strong>12积分/秒</strong>(¥1.2/秒) · 1积分=¥0.1';
     document.getElementById('rechargeModal').classList.add('open');
+    // 默认选中第二档
+    _rechargeSelected = null;
+    var cards = grid.querySelectorAll('.recharge-card');
+    if (cards.length >= 2) selectRechargeCard(cards[1]);
   } catch (e) { toast('加载充值产品失败', 'error'); }
+}
+
+function selectRechargeCard(el) {
+  document.querySelectorAll('.recharge-card').forEach(function(c) { c.classList.remove('selected'); });
+  el.classList.add('selected');
+  _rechargeSelected = { id: el.getAttribute('data-id'), amount: parseInt(el.getAttribute('data-amount')), credits: parseInt(el.getAttribute('data-credits')) };
+  var amtEl = document.getElementById('verifyAmount');
+  if (amtEl) amtEl.value = _rechargeSelected.amount;
+}
+
+async function submitRechargeOrder() {
+  if (!_rechargeSelected) { toast('请先选择充值档位', 'error'); return; }
+  var txnId = document.getElementById('verifyTxnId')?.value?.trim();
+  if (!txnId || txnId.length < 4) { toast('请输入有效的微信交易单号（至少4位）', 'error'); return; }
+  try {
+    var res = await apiPost('/api/recharge-orders', { productId: _rechargeSelected.id });
+    var order = res.order || res;
+    // 提交支付凭证
+    var vRes = await apiPost('/api/orders/' + order.id + '/verify', { txn_id: txnId });
+    toast('订单已提交！预计15分钟内到账 ' + _rechargeSelected.credits + ' 积分', 'info');
+    closeRechargeModal();
+    // 刷新余额
+    try { var u = await apiGet('/api/user/profile'); AUTH.balance = u.balance; updateBalanceUI(); } catch(e){}
+  } catch(e) { toast('提交失败: ' + (e.message || '请重试'), 'error'); }
 }
 
 function closeRechargeModal() { document.getElementById('rechargeModal').classList.remove('open'); }

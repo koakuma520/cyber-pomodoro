@@ -243,7 +243,7 @@
 | `users.json` | ~4 | 用户账户（id, username, passwordHash, balance, plan, isAdmin） |
 | `transactions.json` | ~10 | 积分交易流水（充值/消费/领取/管理调整) |
 | `orders.json` | ~11 | 套餐订阅 + 充值订单（含 24h 过期自动作废） |
-| `plans.json` | 4 | 套餐定义：免费(0元/5条) / 个人(99元/50条) / 专业(499元/300条) / 企业(1999元/1500条) |
+| `plans.json` | 5 | 套餐定义：免费(0元/5积分) / 个人(99元/50积分) / 专业(499元/300积分) / 企业(1999元/1500积分) / 定制(5000元起) |
 | `templates.json` | 10+ | 视频模板（系统内置 + 用户自定义） |
 | `video_usage.json` | ~2 | 月度用量记录（按 `YYYY-MM` 分月统计） |
 | `api_keys.json` | ~1 | 对外 API 密钥（`sk-` 前缀明文存储） |
@@ -368,12 +368,14 @@ function tryFallback(providers, idx, params, cb) {
 // Auto 模式: 按 Kling → Wanxiang → Atlas 顺序尝试, 任一成功即返回
 ```
 
-**成本结构（积分制）：**
-| 模式 | 积分消耗 | 说明 |
-|------|---------|------|
-| Fast | **36 积分/次** | 默认，5 秒视频 |
-| Standard | **54 积分/次** | 高质量 |
-| 对比模式 | **72 积分/次** | 双视频 A/B 测试 |
+**成本结构（积分制 · 极简二档）：**
+| 视频类型 | 条件 | 积分消耗 | 说明 |
+|----------|------|---------|------|
+| **标准视频** | Fast + ≤8秒 + 720p | **1 积分/次** | 默认推荐，适合快速测试 |
+| **高级视频** | Pro / 1080p / 10秒（任一） | **2 积分/次** | 高画质或长视频或专业模型 |
+| 对比模式 | 双视频 A/B 测试 | **2-4 积分/次** | = 单次消耗 × 2 |
+
+> 设计原则：客户 3 秒看懂。只分两档，不设复杂公式。
 
 ### 4.6 视频生成流程（实际同步实现）
 
@@ -384,7 +386,7 @@ function tryFallback(providers, idx, params, cb) {
     │   ├─ 登录检查 (requireAuth)
     │   ├─ API Key 检查 (Atlas 模式需要)
     │   ├─ 配额检查 (checkQuota → 月度剩余)
-    │   └─ 积分检查 (balance >= 36分)
+    │   └─ 积分检查 (balance >= 1分，标准视频)
     │
     ▼
 ┌──────────────────────────────────────┐
@@ -392,7 +394,7 @@ function tryFallback(providers, idx, params, cb) {
 │                                      │
 │  2. 后端校验 + 扣积分                  │
 │     ├─ checkQuota() → 409 或通过     │
-│     ├─ users[idx].balance -= 36      │
+│     ├─ users[idx].balance -= cost     │
 │     ├─ recordUsage() → video_usage   │
 │     └─ 写 transactions.json          │
 │                                      │

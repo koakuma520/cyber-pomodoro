@@ -2,11 +2,7 @@
 var ALL_HISTORY = [];
 
 function calcGenCost(model, duration, resolution) {
-  var t = C.PRICE_TABLE;
-  if (t[model] && t[model][resolution] && t[model][resolution][String(duration)]) {
-    return t[model][resolution][String(duration)];
-  }
-  return 1; // 兜底
+  return C.VIDEO_COST(model, duration, resolution);
 }
 
 async function generate() {
@@ -472,31 +468,30 @@ function updateCost() {
   var isCompare = S.compare && document.getElementById('compareToggle')?.checked;
   var total = isCompare ? credits * 2 : credits;
 
-  // 生成按钮里的积分数字
+  // 生成按钮
   var cn = document.getElementById('costNum');
   if (cn) cn.textContent = total + ' 积分';
 
-  // 质量选择区：当前单价 + 范围
+  // 单价
   var priceEl = document.getElementById('qualityPrice');
   if (priceEl) {
-    var minP = calcGenCost(S.model, 5, '720p');
-    var maxP = calcGenCost(S.model, 10, '1080p');
-    priceEl.textContent = credits + ' 分/次' + (minP === maxP ? '' : ' (' + minP + '-' + maxP + ')');
+    var rate = resolution === '1080p' ? 12 : 6;
+    priceEl.innerHTML = '<span class="price-num">' + credits + '</span> 积分/次'
+      + ' <span class="price-tier ' + (resolution==='720p'?'tier-standard':'tier-premium') + '">' + rate + '分/秒</span>';
   }
 
-  // 费用明细: Fast · 10s · 1080p
+  // 明细
   var detailEl = document.getElementById('costDetail');
   if (detailEl) {
-    var modelName = S.model === 'standard' ? 'Pro' : 'Fast';
-    detailEl.textContent = modelName + ' · ' + duration + 's · ' + resolution;
-    if (isCompare) detailEl.textContent += ' · 对比 ×2';
+    detailEl.textContent = duration + '秒 · ' + resolution + ' · ' + (S.model==='standard'?'Pro':'Fast');
+    if (isCompare) detailEl.textContent += ' · 对比×2';
   }
 
-  // 余额可生成次数
+  // 余额预估
   var countEl = document.getElementById('remainCount');
   if (countEl && AUTH.balance >= 0 && total > 0) {
     var n = Math.floor(AUTH.balance / total);
-    countEl.textContent = '余额可生成 ' + n + ' 次';
+    countEl.textContent = '余额还可生成 ' + n + ' 次（此配置）';
   }
 }
 
@@ -516,7 +511,7 @@ function updateGenBtn(state) {
     case 'queued': btn.innerHTML = '<span class="spinner-btn"></span> 排队中...'; btn.className += ' queued'; btn.disabled = true; break;
     case 'processing': btn.innerHTML = '<span class="spinner-btn"></span> 生成中...'; btn.className += ' processing'; btn.disabled = true; break;
     case 'done': btn.innerHTML = '<span class="gen-btn-icon">✅</span><span class="gen-btn-text">完成！查看结果</span>'; btn.className += ' done'; btn.onclick = function() { document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' }); }; break;
-    default: btn.innerHTML = '<span class="gen-btn-icon">🚀</span><span class="gen-btn-text">开始生成视频</span><span class="gen-btn-cost">约 <span id="costNum">1 积分</span></span>'; btn.onclick = generate;
+    default: btn.innerHTML = '<span class="gen-btn-icon">🚀</span><span class="gen-btn-text">开始生成视频</span><span class="gen-btn-cost">消耗 <span id="costNum">30 积分</span></span>'; btn.onclick = generate;
   }
 }
 
